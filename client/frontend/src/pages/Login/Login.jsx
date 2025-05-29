@@ -1,9 +1,11 @@
 import { InputText } from 'primereact/inputtext'
 import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { loginUser } from '../../api/authApi'
+import { Toast } from 'primereact/toast';
+import { Card } from 'primereact/card';
 
 
 
@@ -13,36 +15,49 @@ function Login() {
     const [password, setPassword] = useState('')
     const navigate = useNavigate()
 
+    const toast = useRef(null);
+
     const handleLogin = async () => {
         try {
-            console.log("email_password____", email,password);
-            
-            const res = await loginUser({email, password})
+            console.log("email_password____", email, password);
+
+            const res = await loginUser({ email, password })
 
             console.log("res____", res)
 
             localStorage.setItem('token', res.token)
-            navigate('/home')
+            toast.current.show({ severity: 'success', summary: 'Success', detail: 'Successfully Login !!!' });
+
+            //! Navigating to the Login Page 
+            setTimeout(() => {
+                navigate('/home')
+            },2000)
         } catch (error) {
-            console.error('Login Failed',error)
+            console.error('Login Failed', error)
         }
-    } 
+    }
 
-    return(
-        <div className="flex justify-center align-center" style={{ height: '100vh', width: '100%'}}>
-            <div className="justify-center align-center card p-shadow-6" style={{ padding: '2rem'}}>
-                <h2 className='p-text-center'>Login</h2>
-                <div className="p-field">
-                    <label>Email: </label>
-                    <InputText value={email} onChange={(e) => setEmail(e.target.value)} ></InputText>
-                </div>
+    const footer = (
+        <div className='flex justify-content-center'>
+            <Button label="Login" onClick={handleLogin} />
+        </div>
+    );
 
-                <div className="p-field">
-                    <label>Password: </label>
-                    <Password value={password} onChange={(e) => setPassword(e.target.value)} ></Password>
+    return (
+        <div className='flex justify-content-center align-items-center h-screen'>
+            <Toast ref={toast} />
+            <Card title="Login" footer={footer} className="md:w-25rem ">
+                <div className='flex flex-column gap-4'>
+                    <div className="flex flex-column gap-2">
+                        <label>Email</label>
+                        <InputText id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <div className="flex flex-column gap-2 w-full">
+                        <label>Password</label>
+                        <Password className='w-full' id='password' inputClassName='w-full' pt={{ iconField: { root: { className: 'w-full' } } }} value={password} onChange={(e) => setPassword(e.target.value)} toggleMask />
+                    </div>
                 </div>
-                <Button label='Login' className='p-mt-3' onClick={handleLogin} ></Button>
-            </div>
+            </Card>
         </div>
     )
 }
