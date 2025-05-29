@@ -35,7 +35,7 @@ exports.login = async (req, res) => {
 
         console.log('user_data____', await bcrypt.hash(password,10));
 
-        console.log("password___", user.password)
+        console.log("password___", user)
         
         console.log(await bcrypt.compare(password, user.password))
 

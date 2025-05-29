@@ -3,8 +3,6 @@ const express = require('express')
 const cors = require('cors')
 const connectDB = require('./config/db')
 
-const authRoutes = require('./routes/authRoutes')
-
 const app = express()
 
 // Middleware
@@ -14,14 +12,15 @@ app.use(cors({
 }))
 app.use(express.json())
 
-//Routes
+//! Your Routes
+const authRoutes = require('./routes/authRoutes')
 app.use('/api/auth', authRoutes)
 
 //Start Server
 const PORT = process.env.PORT || 3000
 const HOST = process.env.HOST || localhost
 connectDB().then(() => {
-    app.listen(PORT, '0.0.0.0', () => {
+    app.listen(PORT, HOST, () => {
         console.log('Auth Service running on port ', PORT)
     })
 })

@@ -14,7 +14,9 @@ function Login() {
 
     const handleLogin = async () => {
         try {
-            const res = await axios.post('/api/auth/login', {
+            console.log("email_password____", email,password);
+            
+            const res = await axios.post('http://192.168.0.109:3000/api/auth/login', {
                 email, 
                 password
             });
@@ -27,16 +29,16 @@ function Login() {
     } 
 
     return(
-        <div className="p-d-flex p-jc-center p-ai-center" style={{ height: '100vh'}}>
-            <div className="card p-shadow-6" style={{ padding: '2rem'}}>
+        <div className="flex justify-center align-center" style={{ height: '100vh', width: '100%'}}>
+            <div className="justify-center align-center card p-shadow-6" style={{ padding: '2rem'}}>
                 <h2 className='p-text-center'>Login</h2>
                 <div className="p-field">
-                    <label>Email</label>
+                    <label>Email: </label>
                     <InputText value={email} onChange={(e) => setEmail(e.target.value)} ></InputText>
                 </div>
 
                 <div className="p-field">
-                    <label>Password</label>
+                    <label>Password: </label>
                     <Password value={password} onChange={(e) => setPassword(e.target.value)} ></Password>
                 </div>
                 <Button label='Login' className='p-mt-3' onClick={handleLogin} ></Button>
