@@ -3,7 +3,8 @@ import { Password } from 'primereact/password'
 import { Button } from 'primereact/button'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import axios from 'axios'
+import { loginUser } from '../../api/authApi'
+
 
 
 function Login() {
@@ -16,12 +17,11 @@ function Login() {
         try {
             console.log("email_password____", email,password);
             
-            const res = await axios.post('http://192.168.0.109:3000/api/auth/login', {
-                email, 
-                password
-            });
+            const res = await loginUser({email, password})
 
-            localStorage.setItem('token', res.data.token)
+            console.log("res____", res)
+
+            localStorage.setItem('token', res.token)
             navigate('/home')
         } catch (error) {
             console.error('Login Failed',error)
