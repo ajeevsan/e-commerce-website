@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { registerUser } from '../../api/authApi'
+import { useNavigate } from 'react-router-dom';
 import { Card } from 'primereact/card';
 import { Button } from 'primereact/button';
 import { Password } from 'primereact/password';
@@ -15,16 +16,11 @@ export default function Register() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [warning, setWarning] = useState(false)
 
+    const navigate = useNavigate()
     const toast = useRef(null);
     
 
-    const footer = (
-        <div className='flex justify-content-center'>
-            <Button label="Create" onClick={handleRegister} />
-        </div>
-    );
-
-    async function handleRegister(){
+    const handleRegister = async () => {
         try {
             await registerUser({name, email, password})
             toast.current.show({ severity: 'success', summary: 'Success', detail: 'Successfully Registered !!!' });
@@ -39,9 +35,18 @@ export default function Register() {
         }
     }
 
+    const footer = (
+        <div className='flex justify-content-center'>
+            <Button label="Create" onClick={handleRegister} />
+        </div>
+    );
+
+    
+
 
     return (
         <div className='flex justify-content-center align-items-center h-screen'>
+            <Toast ref={toast} />
             <Card title="Register" footer={footer} className="md:w-25rem ">
                 <div className='flex flex-column gap-4'>
                     <div className="flex flex-column gap-2">
