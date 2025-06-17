@@ -1,9 +1,8 @@
 {
-  "name": "frontend",
+  "name": "e-commerce",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "proxy": "http://192.168.0.109:3000", 
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
@@ -12,9 +11,6 @@
   },
   "dependencies": {
     "axios": "^1.9.0",
-    "primeflex": "^4.0.0",
-    "primeicons": "^7.0.0",
-    "primereact": "^10.9.5",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.1"
