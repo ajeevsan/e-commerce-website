@@ -1,0 +1,31 @@
+.header-container {
+    background-color: #fff;
+    height: 5rem;
+    width: 100%;
+}
+
+.header-section {
+    height: 100%;
+    width: 80%;
+    margin: auto;
+    box-shadow: rgba(33, 35, 38, 0.1) 0rem .625rem .625rem -0.625rem;
+    display: grid;
+    grid-template-columns: 1fr 6fr;
+
+    & span {
+        height: 2rem;
+        width: auto;
+        margin: auto;
+    }
+
+    & .img-section img {
+        height: 100%;
+        width: auto;
+    }
+
+    & nav ul li {
+        display: flex;
+        justify-content: flex-end;
+        flex-direction: row ;
+    }
+}

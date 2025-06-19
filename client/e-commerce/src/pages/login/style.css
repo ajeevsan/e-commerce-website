@@ -4,17 +4,6 @@
 	box-sizing: border-box;
 }
 
-body {
-	background: #f6f5f7;
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	flex-direction: column;
-	font-family: 'Montserrat', sans-serif;
-	height: 90vh;
-	margin: -20px 0 50px;
-}
-
 h1 {
 	font-weight: bold;
 	margin: 0;
@@ -87,6 +76,18 @@ input {
 	padding: 12px 15px;
 	margin: 8px 0;
 	width: 100%;
+}
+
+
+.body-container {
+	background: #f6f5f7;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+	font-family: 'Montserrat', sans-serif;
+	height: 90vh;
+	margin: -20px 0 50px;
 }
 
 .container {
