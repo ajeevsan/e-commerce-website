@@ -103,7 +103,7 @@ export const Login = () => {
                 placeholder="Password"
                 required
               />
-              <button type="submit">Sign Up</button>
+              <button className="submitBtn" type="submit">Sign Up</button>
             </form>
           </div>
 

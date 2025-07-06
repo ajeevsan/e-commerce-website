@@ -1,64 +1,222 @@
 .carousel-container {
-  width: 100%;
-  max-width: 1000px;
+  width: 90%;
   margin: auto;
   position: relative;
   overflow: hidden;
-  border-radius: 1rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: #fff;
 }
 
 .carousel-wrapper {
   position: relative;
   display: flex;
   align-items: center;
+  height: 400px; /* Fixed height for consistency */
+  overflow: hidden;
+}
+
+.carousel-slide {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
 }
 
 .carousel-slide img {
   width: 100%;
-  height: auto;
-  border-radius: 1rem;
-  transition: opacity 0.5s ease;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
 }
 
-.left-arrow,
-.right-arrow {
+.carousel-slide img:hover {
+  transform: scale(1.02);
+}
+
+.carousel-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 2rem;
-  background-color: rgba(0,0,0,0.3);
-  color: white;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
   border: none;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 12px;
   border-radius: 50%;
   z-index: 10;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.carousel-arrow:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.carousel-arrow:active {
+  transform: translateY(-50%) scale(0.95);
+}
+
+.carousel-arrow:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: translateY(-50%) scale(1);
 }
 
 .left-arrow {
-  left: 1rem;
+  left: 16px;
 }
 
 .right-arrow {
-  right: 1rem;
+  right: 16px;
 }
 
 .carousel-dots {
-  text-align: center;
-  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.4rem 0 ;
+  gap: 8px;
 }
 
 .dot {
-  height: 12px;
   width: 12px;
-  margin: 0 4px;
-  background-color: #bbb;
+  height: 12px;
   border-radius: 50%;
-  display: inline-block;
+  border: none;
+  background: rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.dot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dot:hover {
+  transform: scale(1.2);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .dot.active {
-  background-color: #333;
+  background: #333;
+  transform: scale(1.3);
+}
+
+.dot.active::before {
+  transform: scale(1);
+}
+
+.dot:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: scale(1);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .carousel-container {
+    margin: 10px;
+    border-radius: 12px;
+  }
+  
+  .carousel-wrapper {
+    height: 250px;
+  }
+  
+  .carousel-slide img {
+    border-radius: 12px;
+  }
+  
+  .carousel-arrow {
+    width: 40px;
+    height: 40px;
+    padding: 8px;
+  }
+  
+  .left-arrow {
+    left: 8px;
+  }
+  
+  .right-arrow {
+    right: 8px;
+  }
+  
+  .carousel-dots {
+    padding: 15px 0;
+  }
+  
+  .dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .carousel-wrapper {
+    height: 200px;
+  }
+  
+  .carousel-arrow {
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+  }
+  
+  .left-arrow {
+    left: 6px;
+  }
+  
+  .right-arrow {
+    right: 6px;
+  }
+}
+
+/* Loading state */
+.carousel-slide img[loading="lazy"] {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Focus styles for accessibility */
+.carousel-arrow:focus,
+.dot:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* Smooth transitions */
+.carousel-container * {
+  box-sizing: border-box;
 }

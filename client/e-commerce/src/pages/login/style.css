@@ -32,7 +32,7 @@ a {
 	margin: 15px 0;
 }
 
-button {
+.submitBtn {
 	border-radius: 20px;
 	border: 1px solid #FF4B2B;
 	background-color: #FF4B2B;
@@ -45,15 +45,15 @@ button {
 	transition: transform 80ms ease-in;
 }
 
-button:active {
+.submitBtn:active {
 	transform: scale(0.95);
 }
 
-button:focus {
+.submitBtn:focus {
 	outline: none;
 }
 
-button.ghost {
+.submitBtn.ghost {
 	background-color: transparent;
 	border-color: #FFFFFF;
 	cursor: pointer;
