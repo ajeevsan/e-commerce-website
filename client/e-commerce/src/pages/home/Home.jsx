@@ -1,7 +1,11 @@
+import { ProductCategory } from "../../components/ui/ProductCategory";
+
 export const Home = () => {
     return (
         <>
-        <div>This is Home Page.</div>
+        <div>
+            <ProductCategory/>
+        </div>
     </>
     )
 }
