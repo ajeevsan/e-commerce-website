@@ -3,10 +3,12 @@ import "./style.css";
 import { loginUser, registerUser } from "../../api/authApi";
 import { useNavigate } from "react-router-dom";
 import { Notification } from "../../components/Notification";
+import { useAuth } from "../../context/AuthContext";
 
 export const Login = () => {
   const [isRightPanelActive, setIsRightPanelActie] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleSignUpClick = () => {
     setIsRightPanelActie(true);
@@ -39,16 +41,12 @@ export const Login = () => {
   const handleLoginForm = async (e) => {
     try {
       e.preventDefault();
-      const data = new FormData(e.target);
-      const formData = Object.fromEntries(data.entries());
+      const formTData = new FormData(e.target);
+      const formData = Object.fromEntries(formTData.entries()); 
 
-      const res = await loginUser(formData);
-
-      console.log("response_data____", res);
-
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
+      const data = await loginUser(formData);
+      login(data.token, data.name);
+      navigate("/");
       addNotification("success", "Success!", "Login Successfull !!!");
     } catch (error) {
       console.error("Error while", error);
@@ -69,8 +67,12 @@ export const Login = () => {
       addNotification("success", "Success!", "Registeration Successfull !!!");
       setIsRightPanelActie(false);
     } catch (error) {
-      if(error.response.data==='User exists'){
-        addNotification('error', "Error!", "User Already Exists!!! Please Login.")
+      if (error.response.data === "User exists") {
+        addNotification(
+          "error",
+          "Error!",
+          "User Already Exists!!! Please Login."
+        );
       }
     }
   };
@@ -87,9 +89,20 @@ export const Login = () => {
           <div className="form-container sign-up-container">
             <form onSubmit={handleSignForm}>
               <h1>Create Account</h1>
-              <input type="text" name="name" id="" placeholder="Name" required/>
-              <input type="email" name="email" placeholder="Email" required/>
-              <input type="password" name="password" placeholder="Password" required/>
+              <input
+                type="text"
+                name="name"
+                id=""
+                placeholder="Name"
+                required
+              />
+              <input type="email" name="email" placeholder="Email" required />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+              />
               <button type="submit">Sign Up</button>
             </form>
           </div>
@@ -97,8 +110,13 @@ export const Login = () => {
           <div className="form-container sign-in-container">
             <form onSubmit={handleLoginForm}>
               <h1>Sign in</h1>
-              <input type="email" name="email" placeholder="Email" required/>
-              <input type="password" name="password" placeholder="Password" required/>
+              <input type="email" name="email" placeholder="Email" required />
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                required
+              />
               <a href="/forgot">Forgot you password</a>
               <button type="submit">Sign In</button>
             </form>

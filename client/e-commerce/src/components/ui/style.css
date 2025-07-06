@@ -1,6 +1,6 @@
 .header-container {
     background-color: #fff;
-    height: 5rem;
+    height: 4rem;
     width: 100%;
 }
 
@@ -9,23 +9,60 @@
     width: 80%;
     margin: auto;
     box-shadow: rgba(33, 35, 38, 0.1) 0rem .625rem .625rem -0.625rem;
-    display: grid;
-    grid-template-columns: 1fr 6fr;
 
-    & span {
-        height: 2rem;
-        width: auto;
-        margin: auto;
-    }
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
 
-    & .img-section img {
-        height: 100%;
-        width: auto;
-    }
+.img-section img {
+    height: 2rem;
+    width: auto;
+}
 
-    & nav ul li {
+nav ul {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 3px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: medium;
+    cursor: pointer;
+}
+
+.nav-icons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 3rem;
+    width: 8rem;
+    gap: 8px;
+
+    & .login-item {
         display: flex;
-        justify-content: flex-end;
-        flex-direction: row ;
+        justify-content: center;
+        align-items: center;
+        gap: inherit;
+        font-size: inherit;
     }
+
+    & :first-child {
+        font-size: large;
+    }
+}
+
+.chevron-icon {
+    transition: transform 0.3s ease;
+}
+
+.icon-bg {
+    background-color: black;
+    color: white;
+    border-radius: 10px;
+}
+
+.rotate {
+    transform: rotate(180deg);
 }
