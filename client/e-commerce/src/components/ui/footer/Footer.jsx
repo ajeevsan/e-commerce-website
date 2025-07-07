@@ -68,56 +68,8 @@ export const Footer = () => {
     { icon: FaYoutube, href: "#", color: "#FF0000" },
   ];
 
-  const features = [
-    { icon: FaTruck, title: "Free Shipping", desc: "On orders over $50" },
-    { icon: FaShieldAlt, title: "Secure Payment", desc: "100% Protected" },
-    { icon: FaHeadset, title: "24/7 Support", desc: "Always here to help" },
-    { icon: FaCreditCard, title: "Easy Returns", desc: "30-day return policy" },
-  ];
-
   return (
-    <div className="footer">
-      {/* Features Section */}
-      <div className="footer-features">
-        <div className="footer-container">
-          <div className="features-grid">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
-              return (
-                <div key={index} className="feature-item">
-                  <div className="feature-icon">
-                    <Icon />
-                  </div>
-                  <div className="feature-content">
-                    <h4>{feature.title}</h4>
-                    <p>{feature.desc}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Newsletter Section */}
-      <div className="footer-newsletter">
-        <div className="footer-container">
-          <div className="newsletter-content">
-            <div className="newsletter-text">
-              <h3>Stay Updated</h3>
-              <p>Subscribe to our newsletter for exclusive deals and updates</p>
-            </div>
-            <div className="newsletter-form">
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="newsletter-input"
-              />
-              <button className="newsletter-btn">Subscribe</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="footer">        
 
       {/* Main Footer Content */}
       <div className="footer-main">
@@ -189,15 +141,6 @@ export const Footer = () => {
                     </a>
                   );
                 })}
-              </div>
-            </div>
-            <div className="footer-payment">
-              <span>We Accept:</span>
-              <div className="payment-methods">
-                <div className="payment-card">VISA</div>
-                <div className="payment-card">MC</div>
-                <div className="payment-card">AMEX</div>
-                <div className="payment-card">PP</div>
               </div>
             </div>
           </div>

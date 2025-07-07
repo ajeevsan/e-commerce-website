@@ -6,6 +6,7 @@ import ProtectedRoute from "./components/ProtectedRoutes";
 import { ErrorPage } from "./pages/error/ErrorPage";
 import { AppLayout } from "./components/layout/AppLayout";
 import "./App.css";
+import ProfileWrapper from "./pages/profile/ProfileWrapper";
 
 const App = () => {
   const { isAuthenticated } = useAuth();
@@ -24,6 +25,14 @@ const App = () => {
             </ProtectedRoute>
           ),
         },
+        {
+        path: "/profile", 
+        element: (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProfileWrapper />
+          </ProtectedRoute>
+        ),
+      },
       ],
     },
     {
@@ -33,7 +42,7 @@ const App = () => {
     {
       path: "*",
       element: <Login />,
-    },
+    }
   ]);
 
   return <RouterProvider router={router}></RouterProvider>;

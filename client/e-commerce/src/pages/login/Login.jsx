@@ -118,7 +118,7 @@ export const Login = () => {
                 required
               />
               <a href="/forgot">Forgot you password</a>
-              <button type="submit">Sign In</button>
+              <button className='submitBtn' type="submit">Sign In</button>
             </form>
           </div>
 
@@ -128,7 +128,7 @@ export const Login = () => {
                 <h1>Welcome Back!</h1>
                 <p>Already, have an account !!!</p>
                 <button
-                  className="ghost"
+                  className=" submitBtn"
                   onClick={handleSignInClick}
                   id="signIn"
                 >
@@ -141,7 +141,7 @@ export const Login = () => {
                   Then enter your personal detials and start shopping with us
                 </p>
                 <button
-                  className="ghost"
+                  className=" submitBtn"
                   onClick={handleSignUpClick}
                   id="signUp"
                 >

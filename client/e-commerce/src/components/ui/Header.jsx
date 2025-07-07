@@ -8,34 +8,54 @@ import { IoMdNotifications } from "react-icons/io";
 import { IoExit } from "react-icons/io5";
 import { useState, useRef } from "react";
 import Cookies from "js-cookie";
-
-const dropdownOptions = [
-  {
-    title: "My Profile",
-    icon: RxAvatar,
-  },
-  {
-    title: "Orders",
-    icon: FaBox,
-  },
-  {
-    title: "Wishlist",
-    icon: FaRegHeart,
-  },
-  {
-    title: "Notifications",
-    icon: IoMdNotifications,
-  },
-  {
-    title: "Logout",
-    icon: IoExit,
-  },
-];
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 export const Header = () => {
   const [loginIcon, setLoginIcon] = useState(false);
   const userName = Cookies.get("userName");
   const timeoutRef = useRef(null);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const dropdownOptions = [
+    {
+      title: "My Profile",
+      icon: RxAvatar,
+      action: () => {
+        navigate('/profile?section=profile');
+      },
+    },
+    {
+      title: "Orders",
+      icon: FaBox,
+      action: () => {
+        navigate('/profile?section=orders');
+      },
+    },
+    {
+      title: "Wishlist",
+      icon: FaRegHeart,
+      action: () => {
+        navigate('/profile?section=wishlist');
+      },
+    },
+    {
+      title: "Notifications",
+      icon: IoMdNotifications,
+      action: () => {
+        navigate('/profile?section=notifications');
+      },
+    },
+    {
+      title: "Logout",
+      icon: IoExit,
+      action: () => {
+        navigate('/login');
+        logout();
+      }
+    },
+  ];
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) {
@@ -54,7 +74,7 @@ export const Header = () => {
     <>
       <div className="header-container">
         <div className="header-section">
-          <span className="img-section">
+          <span className="img-section" onClick={() => navigate('/')}>
             <img src="./arti.png" alt="arti-logo" />
           </span>
           <nav>
@@ -67,7 +87,7 @@ export const Header = () => {
               >
                 <div className="login-item">
                   <RxAvatar />
-                  <div>{userName.split(" ")[0]}</div>
+                  <div>{userName ? userName.split(" ")[0] : ''}</div>
                   <FaChevronDown
                     className={`chevron-icon ${loginIcon ? "rotate" : ""}`}
                   />
@@ -76,7 +96,7 @@ export const Header = () => {
                   {dropdownOptions.map((item, index) => {
                     const Icon = item.icon;
                     return (
-                      <li key={index}>
+                      <li key={index} onClick={item.action}>
                         <Icon />
                         <span className="drop-down-title">{item.title}</span>
                       </li>

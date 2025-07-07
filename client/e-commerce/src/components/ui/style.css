@@ -19,6 +19,7 @@
     height: 2rem;
     width: auto;
     margin-left: 2rem;
+    cursor: pointer;
 }
 
 nav ul {
@@ -73,8 +74,8 @@ nav ul {
 .category-container {
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     width: 90%;
-    margin: 10px auto;
-    padding: 20px;
+    margin: 7px auto;
+    padding: 10px;
     display: flex;
     justify-content: space-around;
     align-items: center;
