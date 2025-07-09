@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { User, MapPin, Edit2, Camera, Package, Heart, CreditCard, Gift, Settings, LogOut, Bell, Shield, HelpCircle, Star, Calendar, Truck } from 'lucide-react';
 import './style.css'
+import { useAuth } from '../../context/AuthContext';
 
 const MyProfile = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -17,6 +18,8 @@ const MyProfile = () => {
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  const { logout } = useAuth()
 
   // Handle URL parameters for direct navigation
   useEffect(() => {
@@ -348,7 +351,7 @@ const MyProfile = () => {
             </button>
           ))}
 
-          <button className="nav-item logout">
+          <button className="nav-item logout" onClick={() => logout()}>
             <LogOut size={18} />
             <span>Logout</span>
           </button>

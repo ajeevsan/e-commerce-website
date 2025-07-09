@@ -41,6 +41,8 @@ nav ul {
     height: 3rem;
     width: 8rem;
     gap: 8px;
+    border-radius: 10px;
+
 
     & .login-item {
         display: flex;
@@ -60,7 +62,8 @@ nav ul {
 }
 
 .icon-bg {
-    background-color: black;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
     color: white;
     border-radius: 10px;
 }
@@ -101,6 +104,11 @@ nav ul {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 11;
     border: 1px solid rgba(102, 126, 234, 0.1);
+    height: 8rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 .category-card:hover {
@@ -177,12 +185,11 @@ nav ul {
     text-align: left;
     cursor: pointer;
     transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
     gap: 8px;
     border-bottom: 1px solid rgba(102, 126, 234, 0.1);
     font-weight: 500;
+    display: flex;
+    align-items: center;
 }
 
 .dropdown li:last-child {
@@ -198,11 +205,14 @@ nav ul {
 
 /* Add a subtle animation to the header */
 @keyframes headerGlow {
-    0%, 100% { 
-        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.15); 
+
+    0%,
+    100% {
+        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.15);
     }
-    50% { 
-        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.25); 
+
+    50% {
+        box-shadow: 0 4px 25px rgba(102, 126, 234, 0.25);
     }
 }
 
@@ -217,25 +227,25 @@ nav ul {
         padding: 15px;
         gap: 10px;
     }
-    
+
     .category-card {
         z-index: 16;
         width: 7rem;
         padding: 12px;
     }
-    
+
     .category-card:hover {
         z-index: 17;
     }
-    
+
     .dropdown {
         z-index: 1001;
     }
-    
+
     .header-section {
         width: 95%;
     }
-    
+
     .img-section img {
         margin-left: 1rem;
     }

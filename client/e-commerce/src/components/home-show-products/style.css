@@ -1,0 +1,224 @@
+.product-container {
+    width: 100%;
+    margin: 5px 0;
+    padding: 0 10px;
+}
+
+.product-card {
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 10px;
+    padding: 1rem;
+}
+
+.product-card-header {
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.product-carousel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
+
+
+.nav-button {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    color: gray;
+    transition: all 0.3s ease;
+    z-index: 10;
+    height: 7rem;
+    background-color: #fff;
+    cursor: pointer;
+    box-shadow: rgba(0, 0, 0, 0.12) 0px 1px 3px, rgba(0, 0, 0, 0.24) 0px 1px 2px;
+}
+
+.nav-button:hover:not(.disabled) {
+    transform: translateY(-50%) scale(1.1);
+}
+
+.nav-button.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    color: #6c757d;
+    border-color: #dee2e6;
+    display: none;
+}
+
+.nav-button-left {
+    left: -25px;
+}
+
+.nav-button-right {
+    right: -25px;
+}
+
+/* Main responsive grid layout */
+.main-product {
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    width: 100%;
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.product-content {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    max-width: 250px;
+    min-width: 180px;
+
+}
+
+.item-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    padding: 1rem;
+    border-radius: 8px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    width: 100%;
+    background: #fff;
+    border: 1px solid #f0f0f0;
+}
+
+.item-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.item-img {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.item-img img {
+    width: 100%;
+    max-width: 120px;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.item-title {
+    text-align: center;
+    width: 100%;
+}
+
+.title {
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    line-height: 1.3;
+    color: #333;
+}
+
+.offer-title {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    font-weight: 600;
+    color: #e74c3c;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.error-message {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.responsive-guide {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.responsive-guide h3 {
+    color: #007bff;
+    margin-bottom: 1rem;
+}
+
+.responsive-guide ul {
+    list-style: none;
+    padding: 0;
+}
+
+.responsive-guide li {
+    padding: 0.5rem 0;
+    color: #555;
+}
+
+/* Tablet breakpoint */
+@media (max-width: 768px) {
+    .main-product {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+    }
+
+    .product-card {
+        padding: 0.75rem;
+    }
+
+    .item-card {
+        padding: 0.75rem;
+    }
+}
+
+/* Mobile breakpoint */
+@media (max-width: 480px) {
+    .main-product {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .product-container {
+        padding: 0 5px;
+    }
+
+    .item-card {
+        padding: 0.5rem;
+    }
+
+    .item-img img {
+        max-width: 80px;
+    }
+}
+
+/* Large screen optimization */
+@media (min-width: 1200px) {
+    .main-product {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 2rem;
+    }
+}
