@@ -7,6 +7,7 @@ import { ErrorPage } from "./pages/error/ErrorPage";
 import { AppLayout } from "./components/layout/AppLayout";
 import "./App.css";
 import ProfileWrapper from "./pages/profile/ProfileWrapper";
+import { ProductDetailed } from "./pages/product-detailed/ProductDetailed";
 
 const App = () => {
   const { isAuthenticated } = useAuth();

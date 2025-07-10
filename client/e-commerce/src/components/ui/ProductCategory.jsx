@@ -7,6 +7,7 @@ import { FaKitchenSet } from "react-icons/fa6";
 import { GiFruitBowl } from "react-icons/gi";
 import { FaCar } from "react-icons/fa";
 import { FaDumbbell } from "react-icons/fa6";
+import { useNavigate } from "react-router-dom";
 
 const categories = [
   {
@@ -50,6 +51,7 @@ const categories = [
 export const ProductCategory = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [timeoutId, setTimeoutId] = useState(null);
+  const navigate = useNavigate()
 
   const handleMouseEnter = (index) => {
     clearTimeout(timeoutId);
@@ -60,6 +62,13 @@ export const ProductCategory = () => {
     const id = setTimeout(() => setActiveIndex(null), 300);
     setTimeoutId(id);
   };
+
+  const handleSubItemClick = (subItem) => {
+    // Convert subItem to URL-friendly format
+    const categoryParam = subItem.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+    navigate(`/products/category/${categoryParam}`);
+  };
+
   return (
     <div className="category-container">
       {categories.map((category, index) => {
@@ -88,7 +97,8 @@ export const ProductCategory = () => {
             </div>
             <ul className={`dropdown ${activeIndex === index ? "show" : ""}`}>
               {category.sub.map((subItem, subIndex) => (
-                <li key={subIndex}>{subItem}</li>
+                <li key={subIndex} onClick={() => handleSubItemClick(subItem)}
+                  className="dropdown-item">{subItem}</li>
               ))}
             </ul>
           </div>

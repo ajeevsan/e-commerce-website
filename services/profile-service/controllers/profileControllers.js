@@ -1,5 +1,5 @@
 //! api to get all the profile data
-exports.getAllProfileData = async (req, res) => {
+exports.getCategoryData = async (req, res) => {
     try {
         
     } catch (error) {

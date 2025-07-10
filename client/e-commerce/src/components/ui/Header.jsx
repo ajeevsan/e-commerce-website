@@ -23,6 +23,7 @@ export const Header = () => {
       title: "My Profile",
       icon: RxAvatar,
       action: () => {
+        setLoginIcon(false)
         navigate('/profile?section=profile');
       },
     },
@@ -30,6 +31,7 @@ export const Header = () => {
       title: "Orders",
       icon: FaBox,
       action: () => {
+        setLoginIcon(false)
         navigate('/profile?section=orders');
       },
     },
@@ -37,6 +39,7 @@ export const Header = () => {
       title: "Wishlist",
       icon: FaRegHeart,
       action: () => {
+        setLoginIcon(false)
         navigate('/profile?section=wishlist');
       },
     },
@@ -44,6 +47,7 @@ export const Header = () => {
       title: "Notifications",
       icon: IoMdNotifications,
       action: () => {
+        setLoginIcon(false)
         navigate('/profile?section=notifications');
       },
     },
@@ -51,6 +55,7 @@ export const Header = () => {
       title: "Logout",
       icon: IoExit,
       action: () => {
+        setLoginIcon(false)
         navigate('/login');
         logout();
       }

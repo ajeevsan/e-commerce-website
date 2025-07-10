@@ -153,7 +153,7 @@ export const Login = () => {
         </div>
         <footer>
           <p>
-            Create with <i className="fa fa-heart"></i> by
+            Created with ❤️ by
             <a
               target="_blank"
               href="https://www.linkedin.com/in/sanjeev-majhi-4305b6a2/"
