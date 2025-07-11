@@ -15,16 +15,16 @@ app.use(compression())
 app.use(express.json({limit: '10mb'}))
 app.use(express.urlencoded({ extended: true, limit: '10mb'}))
 
-//! request logging middleware
-app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`)
-    next()
-})
-
 
 //! routes
 const productRoutes = require('./routes/productRoutes')
 app.use('/api/products/', productRoutes)
+
+//! request logging middleware
+app.use((req, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`)
+    next()
+})
 
 //! health checks 
 app.get('/health', (res) => {
@@ -46,7 +46,6 @@ app.use((err, res) => {
         error: process.env.NODE_ENV === 'development'? err.message : undefined
     })
 })
-
 
 const PORT = process.env.PORT || 3001
 const HOST = process.env.HOST || 'localhost'

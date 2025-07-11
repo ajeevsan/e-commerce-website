@@ -1,64 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import { FaStar, FaShoppingCart, FaHeart, FaEye } from 'react-icons/fa';
-import { MdCategory } from 'react-icons/md';
-import { BiDollar } from 'react-icons/bi';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { FaStar, FaShoppingCart, FaSearch } from 'react-icons/fa';
+import { BiArrowBack } from 'react-icons/bi';
+import { useAuth } from '../../context/AuthContext';
+import ApiService from '../../api/getProduct';
 import './style.css';
 
 export const ProductDetailed = () => {
+  const { category } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { isAuthenticated } = useAuth();
+  
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({});
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
 
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  // //! preloading images function 
+  // const preloadedImages = useCallback((imageUrls) => {
 
-  const fetchProducts = async () => {
+  // })
+
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('https://dummyjson.com/products');
+      setError(null);
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch products');
+      const response = await ApiService.getProductsByCategory(category, {
+        page: currentPage,
+        limit: 12,
+        search: searchTerm
+      });
+      
+      if (response.success) {
+        setProducts(response.data.products);
+        setPagination(response.data.pagination);
+      } else {
+        setError('Failed to fetch products');
       }
-      
-      const data = await response.json();
-      setProducts(data.products);
     } catch (err) {
       setError(err.message);
+      console.error('Error fetching products:', err);
     } finally {
       setLoading(false);
     }
+  }, [category, currentPage, searchTerm]); 
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchProducts();
+    }
+  }, [isAuthenticated, fetchProducts]);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    setSearchParams({ search: searchTerm, page: '1' });
+    fetchProducts();
   };
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<FaStar key={i} className="star filled" />);
-    }
-
-    if (hasHalfStar) {
-      stars.push(<FaStar key="half" className="star half-filled" />);
-    }
-
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<FaStar key={`empty-${i}`} className="star empty" />);
-    }
-
-    return stars;
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    setSearchParams({ 
+      ...(searchTerm && { search: searchTerm }), 
+      page: newPage.toString() 
+    });
   };
+
+  const goBack = () => {
+    window.history.back();
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="product-view-container">
+        <div className="error">Please log in to view products</div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
       <div className="product-view-container">
-        <div className="loading-spinner">
-          <div className="spinner"></div>
-          <p>Loading products...</p>
-        </div>
+        <div className="loading">Loading products...</div>
       </div>
     );
   }
@@ -66,12 +92,7 @@ export const ProductDetailed = () => {
   if (error) {
     return (
       <div className="product-view-container">
-        <div className="error-message">
-          <p>Error: {error}</p>
-          <button onClick={fetchProducts} className="retry-button">
-            Retry
-          </button>
-        </div>
+        <div className="error">Error: {error}</div>
       </div>
     );
   }
@@ -79,76 +100,100 @@ export const ProductDetailed = () => {
   return (
     <div className="product-view-container">
       <div className="product-header">
-        <h1>Our Products</h1>
-        <p>Discover amazing products from our collection</p>
+        <button onClick={goBack} className="back-button">
+          <BiArrowBack /> Back
+        </button>
+        <h1 className="category-title">
+          {category.charAt(0).toUpperCase() + category.slice(1)} Products
+        </h1>
       </div>
 
+      {/* Search Bar */}
+      <form onSubmit={handleSearch} className="search-form">
+        <div className="search-input-container">
+          <FaSearch className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+          <button type="submit" className="search-button">
+            Search
+          </button>
+        </div>
+      </form>
+
+      {/* Products Grid */}
       <div className="products-grid">
         {products.map((product) => (
           <div key={product.id} className="product-card">
-            <div className="product-image-container">
-              <img 
-                src={product.thumbnail} 
-                alt={product.title}
-                className="product-image"
-              />
-              <div className="product-overlay">
-                <button className="overlay-button">
-                  <FaEye />
-                </button>
-                <button className="overlay-button">
-                  <FaHeart />
-                </button>
-              </div>
-              {product.discountPercentage > 0 && (
-                <div className="discount-badge">
-                  -{Math.round(product.discountPercentage)}%
-                </div>
-              )}
+            <div className="product-image">
+              <img src={product.thumbnail} alt={product.title} />
             </div>
-
+            
             <div className="product-info">
-              <div className="product-category">
-                <MdCategory />
-                <span>{product.category}</span>
-              </div>
-
               <h3 className="product-title">{product.title}</h3>
-              <p className="product-description">{product.description}</p>
-
+              <p className="product-description">{product.description.length>=100?product.description.slice(1,100)+'...':product.description}</p>
+              
               <div className="product-rating">
-                <div className="stars">
-                  {renderStars(product.rating)}
-                </div>
-                <span className="rating-text">({product.rating})</span>
+                <FaStar className="star-icon" />
+                <span>{product.rating}</span>
+                <span className="review-count">({product.reviews?.length || 0} reviews)</span>
               </div>
-
+              
               <div className="product-price">
-                <span className="current-price">
-                  <BiDollar />${product.price}
-                </span>
+                <span className="current-price">${product.price}</span>
                 {product.discountPercentage > 0 && (
-                  <span className="original-price">
-                    ${(product.price / (1 - product.discountPercentage / 100)).toFixed(2)}
-                  </span>
+                  <span className="discount">-{product.discountPercentage}%</span>
                 )}
               </div>
-
+              
               <div className="product-stock">
                 <span className={`stock-status ${product.stock > 0 ? 'in-stock' : 'out-of-stock'}`}>
-                  {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                  {product.stock > 0 ? `In Stock (${product.stock})` : 'Out of Stock'}
                 </span>
               </div>
-
-              <button className="add-to-cart-button" disabled={product.stock === 0}>
-                <FaShoppingCart />
-                Add to Cart
+              
+              <button className="add-to-cart-btn" disabled={product.stock === 0}>
+                <FaShoppingCart /> Add to Cart
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="pagination">
+          <button 
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={!pagination.hasPreviousPage}
+            className="pagination-btn"
+          >
+            Previous
+          </button>
+          
+          <span className="pagination-info">
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </span>
+          
+          <button 
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={!pagination.hasNextPage}
+            className="pagination-btn"
+          >
+            Next
+          </button>
+        </div>
+      )}
+      
+      {products.length === 0 && (
+        <div className="no-products">
+          <p>No products found in this category.</p>
+        </div>
+      )}
     </div>
   );
 };
-

@@ -17,11 +17,11 @@ const productLimiter = rateLimit({
 })
 
 // Routes
-router.get('/all', productLimiter, getAllProducts)
-router.get('/featured', productLimiter, getFeaturedProducts)
-router.get('/categories', productLimiter, getCategories)
-router.get('/offers', productLimiter, getOffers)
-router.get('/category/:category', productLimiter, getCategoryData)
+router.get('/all', getAllProducts)
+router.get('/featured', getFeaturedProducts)
+router.get('/categories', getCategories)
+router.get('/offers', getOffers)
+router.get('/category/:category', getCategoryData)
 router.get('/:id', productLimiter, getProductById) // Changed from '/product/:id' to '/:id'
 
 module.exports = router

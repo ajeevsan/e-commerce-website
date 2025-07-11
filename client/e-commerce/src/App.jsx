@@ -34,6 +34,14 @@ const App = () => {
           </ProtectedRoute>
         ),
       },
+      {
+        path: '/products/category/:category',
+        element: (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProductDetailed />
+          </ProtectedRoute>
+        )
+      }
       ],
     },
     {
