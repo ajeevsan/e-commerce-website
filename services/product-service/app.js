@@ -3,6 +3,7 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const compression = require('compression')
+const connectDB = require('./config/db')
 
 const app = express()
 
@@ -12,8 +13,8 @@ app.use(helmet())
 app.use(compression())
 
 //! body parsing middleware
-app.use(express.json({limit: '10mb'}))
-app.use(express.urlencoded({ extended: true, limit: '10mb'}))
+app.use(express.json({ limit: '10mb' }))
+app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 
 //! routes
@@ -43,16 +44,18 @@ app.use((err, res) => {
         success: false,
         message: 'Internal Server Error',
         data: null,
-        error: process.env.NODE_ENV === 'development'? err.message : undefined
+        error: process.env.NODE_ENV === 'development' ? err.message : undefined
     })
 })
 
 const PORT = process.env.PORT || 3001
 const HOST = process.env.HOST || 'localhost'
 
-app.listen(PORT, HOST, () => {
-    console.log(`Product Service is running on ${HOST}:${PORT}`)
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+connectDB().then(() => {
+    app.listen(PORT, HOST, () => {
+        console.log(`Product Service is running on ${HOST}:${PORT}`)
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
+    })
 })
 //! graceful shutdown
 process.on('SIGTERM', () => {

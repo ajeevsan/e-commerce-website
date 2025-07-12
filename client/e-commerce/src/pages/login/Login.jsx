@@ -1,9 +1,9 @@
 import { useState } from "react";
-import "./style.css";
 import { loginUser, registerUser } from "../../api/authApi";
 import { useNavigate } from "react-router-dom";
 import { Notification } from "../../components/Notification";
 import { useAuth } from "../../context/AuthContext";
+import "./style.css";
 
 export const Login = () => {
   const [isRightPanelActive, setIsRightPanelActie] = useState(false);

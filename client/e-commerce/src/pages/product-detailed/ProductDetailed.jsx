@@ -140,12 +140,12 @@ export const ProductDetailed = () => {
   return (
     <div className="product-view-container">
       <div className="product-header">
-        <button onClick={goBack} className="back-button">
-          <BiArrowBack /> Back
-        </button>
         <h1 className="category-title">
           {category.charAt(0).toUpperCase() + category.slice(1)} Products
         </h1>
+        <button onClick={goBack} className="back-button">
+          <BiArrowBack /> Back
+        </button>
       </div>
 
       {/* Search Bar */}
@@ -173,12 +173,12 @@ export const ProductDetailed = () => {
               <img src={product.thumbnail} 
                 alt={product.title}
                 onLoad={() => handleImageLoad(product.id)}
-                className={`product-img ${loadedImages.has(product.id) ? 'loaded' : 'loading'}`}/>
+                className={`product-image ${loadedImages.has(product.id) ? 'loaded' : 'loading'}`}/>
             </div>
             
             <div className="product-info">
               <h3 className="product-title">{product.title}</h3>
-              <p className="product-description">{product.description.length>=100?product.description.slice(1,100)+'...':product.description}</p>
+              <p className="product-description">{product.description.length>=100?product.description.slice(0,100)+'...':product.description}</p>
               
               <div className="product-rating">
                 <FaStar className="star-icon" />

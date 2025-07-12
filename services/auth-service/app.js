@@ -23,6 +23,6 @@ const PORT = process.env.PORT || 3000
 const HOST = process.env.HOST || localhost
 connectDB().then(() => {
     app.listen(PORT, HOST, () => {
-        console.log('Auth Service running on port ', PORT)
+        console.log('Auth Service running on port', PORT)
     })
 })

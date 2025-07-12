@@ -8,6 +8,7 @@ class ApiService {
         this.baseURL = BASE_URL;
         this.axiosInstance = this.createAxiosInstance();
         this.token = Cookies.get('token')
+        this.setupInterceptors()
     }
 
     createAxiosInstance() {
