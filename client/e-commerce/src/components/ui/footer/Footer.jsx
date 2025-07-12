@@ -78,7 +78,7 @@ export const Footer = () => {
             {/* Company Info */}
             <div className="footer-section footer-about">
               <div className="footer-logo">
-                <img src="./arti.png" alt="Arti Logo" />
+                <img src="/arti.png" alt="Arti Logo" />
               </div>
               <p className="footer-description">
                 Your one-stop destination for quality products and exceptional

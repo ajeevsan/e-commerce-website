@@ -80,7 +80,7 @@ export const Header = () => {
       <div className="header-container">
         <div className="header-section">
           <span className="img-section" onClick={() => navigate('/')}>
-            <img src="./arti.png" alt="arti-logo" />
+            <img src="/arti.png" alt="arti-logo" />
           </span>
           <nav>
             <ul>

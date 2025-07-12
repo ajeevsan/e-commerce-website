@@ -17,16 +17,37 @@ export const ProductDetailed = () => {
   const [pagination, setPagination] = useState({});
   const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page')) || 1);
+  const [imageLoaded, setImagesLoaded] = useState(false)
+  const [loadedImages, setLoadedImages] = useState(new Set())
 
   // //! preloading images function 
-  // const preloadedImages = useCallback((imageUrls) => {
+  const preloadedImages = useCallback((imageUrls) => {
+    return Promise.all(
+      imageUrls.map(url => {
+        return new Promise((resolve, reject) => {
+          const img = new Image()
+          img.onload = () => resolve(url)
+          img.onerror = () => reject(url)
+          img.src = url
+        })
+      })
+    )
+  }, [])
 
-  // })
+  const handleImageLoad = useCallback((productId) => {
+    setLoadedImages(prev => {
+      const newSet = new Set(prev)
+      newSet.add(productId)
+      return newSet;
+    })
+  }, [])
 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setImagesLoaded(false)
+      setLoadedImages(new Set())
       
       const response = await ApiService.getProductsByCategory(category, {
         page: currentPage,
@@ -37,6 +58,17 @@ export const ProductDetailed = () => {
       if (response.success) {
         setProducts(response.data.products);
         setPagination(response.data.pagination);
+
+        //! preload images
+        const imageUrls = response.data.products.map(product => product.thumbnail)
+
+        try {
+          await preloadedImages(imageUrls)
+          setImagesLoaded(true)
+        } catch (error) {
+          console.error('error while preloading images', error)
+          setImagesLoaded(true) 
+        }
       } else {
         setError('Failed to fetch products');
       }
@@ -46,7 +78,7 @@ export const ProductDetailed = () => {
     } finally {
       setLoading(false);
     }
-  }, [category, currentPage, searchTerm]); 
+  }, [category, currentPage, searchTerm, preloadedImages]); 
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -54,11 +86,17 @@ export const ProductDetailed = () => {
     }
   }, [isAuthenticated, fetchProducts]);
 
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
+
   const handleSearch = (e) => {
     e.preventDefault();
     setCurrentPage(1);
     setSearchParams({ search: searchTerm, page: '1' });
-    fetchProducts();
+    // Scroll to top after search
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handlePageChange = (newPage) => {
@@ -67,6 +105,8 @@ export const ProductDetailed = () => {
       ...(searchTerm && { search: searchTerm }), 
       page: newPage.toString() 
     });
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const goBack = () => {
@@ -81,7 +121,7 @@ export const ProductDetailed = () => {
     );
   }
 
-  if (loading) {
+  if (loading || !imageLoaded) {
     return (
       <div className="product-view-container">
         <div className="loading">Loading products...</div>
@@ -130,7 +170,10 @@ export const ProductDetailed = () => {
         {products.map((product) => (
           <div key={product.id} className="product-card">
             <div className="product-image">
-              <img src={product.thumbnail} alt={product.title} />
+              <img src={product.thumbnail} 
+                alt={product.title}
+                onLoad={() => handleImageLoad(product.id)}
+                className={`product-img ${loadedImages.has(product.id) ? 'loaded' : 'loading'}`}/>
             </div>
             
             <div className="product-info">
