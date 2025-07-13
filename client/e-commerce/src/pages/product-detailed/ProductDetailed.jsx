@@ -167,8 +167,8 @@ export const ProductDetailed = () => {
 
       {/* Products Grid */}
       <div className="products-grid">
-        {products.map((product) => (
-          <div key={product.id} className="product-card">
+        {products.map((product, index) => (
+          <div key={index} className="product-card">
             <div className="product-image">
               <img src={product.thumbnail} 
                 alt={product.title}

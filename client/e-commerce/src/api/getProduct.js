@@ -41,7 +41,7 @@ class ApiService {
             (error) => {
                 if(error.response?.status === 401){
                     Cookies.remove('token');
-                    window.location('/login')
+                    window.location = '/login'
                 }
                 return Promise.reject(error)
             }
