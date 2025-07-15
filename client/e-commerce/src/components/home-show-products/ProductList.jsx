@@ -50,7 +50,7 @@ export const ProductList = ({ config }) => {
 
   return (
     <div className="product-container">
-      <div className="product-card">
+      <div className="product-home-card">
         <div className="product-card-header">{config.title}</div>
 
         <div className="product-carousel">

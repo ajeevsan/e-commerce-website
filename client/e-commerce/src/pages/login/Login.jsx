@@ -45,7 +45,7 @@ export const Login = () => {
       const formData = Object.fromEntries(formTData.entries()); 
 
       const data = await loginUser(formData);
-      login(data.token, data.name);
+      login(data.token, data.name, data.userId);
       navigate("/");
       addNotification("success", "Success!", "Login Successfull !!!");
     } catch (error) {

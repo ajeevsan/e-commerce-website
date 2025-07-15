@@ -8,7 +8,7 @@ import { AppLayout } from "./components/layout/AppLayout";
 import "./App.css";
 import ProfileWrapper from "./pages/profile/ProfileWrapper";
 import { ProductDetailed } from "./pages/product-detailed/ProductDetailed";
-
+import { ProductDetail } from "./pages/product-detail/ProductDetail";
 const App = () => {
   const { isAuthenticated } = useAuth();
 
@@ -39,6 +39,14 @@ const App = () => {
         element: (
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <ProductDetailed />
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/cart',
+        element: (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <ProductDetail/>
           </ProtectedRoute>
         )
       }

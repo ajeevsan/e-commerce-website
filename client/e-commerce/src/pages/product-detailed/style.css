@@ -104,8 +104,8 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
-  height: 550px; /* Fixed height for all cards */
   display: flex;
+  height: 45rem;
   flex-direction: column;
 }
 

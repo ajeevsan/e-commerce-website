@@ -10,12 +10,14 @@ import { useState, useRef } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useCart } from "../../context/CartContext"
 
 export const Header = () => {
   const [loginIcon, setLoginIcon] = useState(false);
   const userName = Cookies.get("userName");
   const timeoutRef = useRef(null);
   const { logout } = useAuth();
+  const { getTotalItems } = useCart()
   const navigate = useNavigate();
 
   const dropdownOptions = [
@@ -75,6 +77,8 @@ export const Header = () => {
     }, 150);
   };
 
+  const totalItems = getTotalItems()
+
   return (
     <>
       <div className="header-container">
@@ -109,8 +113,13 @@ export const Header = () => {
                   })}
                 </ul>
               </li>
-              <li className="nav-icons">
+              <li className="nav-icons cart-icon" onClick={() => navigate('/cart')}>
+                <div className="cart-container">
                 <FaCartShopping />
+                  {totalItems > 0 && (
+                    <span className="cart-badge">{totalItems}</span>
+                  )}
+                </div>
                 Cart
               </li>
             </ul>

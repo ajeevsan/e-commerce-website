@@ -9,7 +9,7 @@ const productSchema = new mongoose.Schema({}, {strict: false})
 //!create the model
 const Product = mongoose.model('Product', productSchema)
 
-// Category mapping for DummyJSON API
+//! Category mapping for DummyJSON API
 const categoryMapping = {
   'men': 'mens-shirts',
   'women': 'womens-dresses',

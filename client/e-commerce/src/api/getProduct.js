@@ -165,7 +165,7 @@ class ApiService {
 
     //! get token
     getToken(){
-        return Cookies.gett('token')
+        return Cookies.get('token')
     }
 }
 

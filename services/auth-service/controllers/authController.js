@@ -16,7 +16,7 @@ exports.register = async (req, res) => {
         const user = await User.create({ name, email, password: hashedPassword });
 
         //! Generate Token
-        const token = jwt.sign({ id: user._id}, process.env.JWT_SECRET, { expiresIn: '1h'});
+        const token = jwt.sign({ id: user._id}, process.env.JWT_SECRET, { expiresIn: '24h'});
         res.status(201).json({ message: 'User Registered Successfully', token });
     } catch (error) {
         console.error(error);
@@ -29,15 +29,13 @@ exports.login = async (req, res) => {
     
         const {email, password} = req.body;
         const user = await User.findOne({ email });
-
         if(!user || !(await bcrypt.compare(password, user.password))){
             console.log('Issue in the login route');
             
             return res.status(401).json({msg: 'Invalid Credentials'})
         }
-
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {expiresIn: '1h'});
-        return res.status(200).json({ message: 'Login successful', name: user.name, token });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {expiresIn: '24h'});
+        return res.status(200).json({ message: 'Login successful', name: user.name, userId: user._id, token });
     } catch (error) {
         console.error(error);
         res.status(500).json({message: 'Server Error'})
