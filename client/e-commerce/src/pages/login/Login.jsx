@@ -46,8 +46,8 @@ export const Login = () => {
 
       const data = await loginUser(formData);
       login(data.token, data.name, data.userId);
-      navigate("/");
       addNotification("success", "Success!", "Login Successfull !!!");
+      navigate("/");
     } catch (error) {
       console.error("Error while", error);
     }

@@ -26,16 +26,16 @@ const cartSchema = new mongoose.Schema({
         // Cache product details to avoid joins
         productTitle: {
             type: String,
-            required: false // Changed from true to false since controller doesn't always provide it
+            required: true
         },
         productImage: {
             type: String,
-            required: false // Changed from true to false since controller doesn't always provide it
+            required: true
         },
-        // Add stock field that controller uses
+        // Add stock field to match controller
         stock: {
             type: Number,
-            required: false
+            default: 0
         },
         addedAt: {
             type: Date,
@@ -53,36 +53,36 @@ const cartSchema = new mongoose.Schema({
     },
     totalPrice: { 
         type: Number, 
-        default: 0
+        default: 0 
     },
     status: {
         type: String,
         enum: ['active', 'abandoned', 'converted', 'expired'],
         default: 'active'
     },
-    // Add coupon field that controller uses
+    // Add coupon field to match controller
     coupon: {
         code: {
-            type: String,
-            required: false
+            type: String
         },
         discountPercentage: {
             type: Number,
-            required: false
+            min: 0,
+            max: 100
         },
         discountAmount: {
             type: Number,
-            required: false
+            min: 0
         }
     },
     lastModified: {
         type: Date,
         default: Date.now
     },
+    // Remove the default and expires from expiresAt to fix the duplicate index warning
     expiresAt: {
         type: Date,
-        default: Date.now,
-        expires: 2592000 // 30 days
+        default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     },
     // Add versioning for optimistic locking
     version: {
@@ -91,17 +91,17 @@ const cartSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true, // This provides createdAt and updatedAt automatically
-    // Optimize document size
     minimize: false
 })
+
+// Create TTL index manually to avoid duplicate index warning
+cartSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 })
 
 // Compound indexes for better performance
 cartSchema.index({ userId: 1, status: 1 })
 cartSchema.index({ 'items.productId': 1, userId: 1 })
-cartSchema.index({ expiresAt: 1 })
 cartSchema.index({ lastModified: 1 })
 cartSchema.index({ status: 1, lastModified: 1 }) // For analytics
-cartSchema.index({ status: 1, updatedAt: 1 }) // For abandoned cart queries
 
 // Pre-save middleware with validation
 cartSchema.pre('save', function(next) {
@@ -110,19 +110,31 @@ cartSchema.pre('save', function(next) {
         return next(new Error('Cart cannot exceed 50 items'))
     }
     
-    // Calculate totals (controller also does this, but keeping as backup)
+    // Calculate totals
     this.totalItems = this.items.reduce((total, item) => total + item.quantity, 0)
-    this.totalPrice = Math.round(this.items.reduce((total, item) => total + (item.price * item.quantity), 0) * 100) / 100
+    this.totalPrice = this.items.reduce((total, item) => total + (item.price * item.quantity), 0)
+    
+    // Round totalPrice to 2 decimal places to match controller
+    this.totalPrice = Math.round(this.totalPrice * 100) / 100
+    
     this.lastModified = new Date()
     this.version += 1
     
-    // Update updatedAt for each item when cart is saved
-    this.items.forEach(item => {
-        if (item.isModified || item.isNew) {
-            item.updatedAt = new Date()
-        }
-    })
+    // Update expiresAt to extend cart life on activity
+    this.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     
+    next()
+})
+
+// Update item updatedAt timestamp when items are modified
+cartSchema.pre('save', function(next) {
+    if (this.isModified('items')) {
+        this.items.forEach(item => {
+            if (item.isModified() || item.isNew) {
+                item.updatedAt = new Date()
+            }
+        })
+    }
     next()
 })
 
@@ -132,19 +144,19 @@ cartSchema.methods.findItemIndex = function(productId) {
 }
 
 cartSchema.methods.addItem = function(product, quantity = 1) {
-    const itemIndex = this.findItemIndex(product._id || product.productId)
+    const itemIndex = this.findItemIndex(product._id)
     
     if (itemIndex > -1) {
         this.items[itemIndex].quantity += quantity
         this.items[itemIndex].updatedAt = new Date()
     } else {
         this.items.push({
-            productId: product._id || product.productId,
+            productId: product._id,
             quantity,
             price: product.price,
-            productTitle: product.title || product.productTitle,
-            productImage: product.thumbnail || product.productImage || (product.images && product.images[0]),
-            stock: product.stock,
+            productTitle: product.title,
+            productImage: product.thumbnail || product.images[0],
+            stock: product.stock || 0,
             addedAt: new Date(),
             updatedAt: new Date()
         })
@@ -167,30 +179,39 @@ cartSchema.methods.updateItemQuantity = function(productId, quantity) {
     }
 }
 
-// Method to get cart summary (used by controller)
-cartSchema.methods.getSummary = function() {
-    return {
-        userId: this.userId,
-        totalItems: this.totalItems,
-        totalPrice: this.totalPrice,
-        itemCount: this.items.length,
-        status: this.status,
-        lastUpdated: this.updatedAt
+// Method to clear cart
+cartSchema.methods.clearCart = function() {
+    this.items = []
+    this.totalItems = 0
+    this.totalPrice = 0
+    this.coupon = undefined
+}
+
+// Method to apply coupon
+cartSchema.methods.applyCoupon = function(couponCode, discountPercentage) {
+    const discountAmount = (this.totalPrice * discountPercentage) / 100
+    this.coupon = {
+        code: couponCode,
+        discountPercentage,
+        discountAmount: Math.round(discountAmount * 100) / 100
     }
 }
 
-// Method to validate cart items (placeholder for future implementation)
-cartSchema.methods.validateItems = function() {
-    return {
-        isValid: true,
-        invalidItems: [],
-        outOfStockItems: [],
-        priceChanges: []
+// Method to remove coupon
+cartSchema.methods.removeCoupon = function() {
+    this.coupon = undefined
+}
+
+// Method to get final price after discount
+cartSchema.methods.getFinalPrice = function() {
+    if (this.coupon && this.coupon.discountAmount) {
+        return Math.round((this.totalPrice - this.coupon.discountAmount) * 100) / 100
     }
+    return this.totalPrice
 }
 
 // Static method to find abandoned carts
-cartSchema.statics.findAbandonedCarts = function(days = 7, page = 1, limit = 10) {
+cartSchema.statics.findAbandonedCarts = function(days = 7) {
     const dateThreshold = new Date()
     dateThreshold.setDate(dateThreshold.getDate() - days)
     
@@ -198,19 +219,12 @@ cartSchema.statics.findAbandonedCarts = function(days = 7, page = 1, limit = 10)
         status: 'abandoned',
         updatedAt: { $lt: dateThreshold }
     })
-    .limit(limit)
-    .skip((page - 1) * limit)
-    .sort({ updatedAt: -1 })
 }
 
-// Static method to count abandoned carts
-cartSchema.statics.countAbandonedCarts = function(days = 7) {
-    const dateThreshold = new Date()
-    dateThreshold.setDate(dateThreshold.getDate() - days)
-    
-    return this.countDocuments({
-        status: 'abandoned',
-        updatedAt: { $lt: dateThreshold }
+// Static method to cleanup expired carts
+cartSchema.statics.cleanupExpiredCarts = function() {
+    return this.deleteMany({
+        expiresAt: { $lt: new Date() }
     })
 }
 

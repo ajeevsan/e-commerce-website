@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { Notification } from "../../components/Notification";
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { FaStar, FaShoppingCart, FaSearch } from 'react-icons/fa';
 import { BiArrowBack } from 'react-icons/bi';
@@ -32,6 +33,8 @@ export const ProductDetailed = () => {
   const [imageLoaded, setImagesLoaded] = useState(false)
   const [loadedImages, setLoadedImages] = useState(new Set())
   const [addingToCart, setAddingToCart] = useState(new Set()); // Track which products are being added
+  const [notifications, setNotifications] = useState([]);
+
 
   // //! preloading images function 
   const preloadedImages = useCallback((imageUrls) => {
@@ -46,6 +49,24 @@ export const ProductDetailed = () => {
       })
     )
   }, [])
+
+  //! Notification methods
+  const addNotification = (type, title, message) => {
+    const id = Date.now();
+
+    const newNotification = {
+      id,
+      type,
+      title,
+      message,
+      onClose: () => removeNotification(id),
+    };
+    setNotifications((prev) => [...prev, newNotification]);
+  };
+
+  const removeNotification = (id) => {
+    setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+  };
 
   const handleImageLoad = useCallback((productId) => {
     setLoadedImages(prev => {
@@ -137,7 +158,7 @@ export const ProductDetailed = () => {
     e.stopPropagation(); //! Prevent navigation when clicking add to cart
     
     if (product.stock <= 0) {
-      alert('This product is out of stock');
+      addNotification("Warning", "Sorry!", 'This product is out of stock');
       return;
     }
 
@@ -159,20 +180,20 @@ export const ProductDetailed = () => {
       await addToCartAPI(product, 1);
       
       // Show success message
-      alert(`${product.title} added to cart!`);
-      
+      addNotification("success", "Success!", `${product.title} added to cart!`);
+
     } catch (error) {
       console.error('Error adding to cart:', error);
       
       // Handle different error scenarios
       if (error.status === 401) {
-        alert('Please log in to add items to cart');
+        addNotification("error", "Error!", `Please log in to add items to cart`);
         navigate('/login');
       } else if (error.status === 0) {
         // Network error - item might still be added to local cart
-        alert('Network error. Item added to local cart and will sync when connection is restored.');
+        addNotification("error", "Error!", 'Network error. Item added to local cart and will sync when connection is restored.');
       } else {
-        alert(`Failed to add ${product.title} to cart. Please try again.`);
+        addNotification("error", "Error!", `Failed to add ${product.title} to cart. Please try again.`);
       }
     } finally {
       // Remove product from adding state
@@ -384,6 +405,19 @@ export const ProductDetailed = () => {
           <p>No products found in this category.</p>
         </div>
       )}
+
+      {notifications.map((notification, index) => (
+          <Notification
+            key={notification.id}
+            type={notification.type}
+            title={notification.title}
+            message={notification.message}
+            onClose={notification.onClose}
+            duration={4000}
+            position="top-right"
+            index={index}
+          />
+        ))}
     </div>
   );
 };

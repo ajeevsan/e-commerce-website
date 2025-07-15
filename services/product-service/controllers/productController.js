@@ -2,6 +2,7 @@ const axios = require('axios')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const logger = require('../config/logger')
+const {redisClient} = require('../config/cache')
 
 //! Creating a basic schema 
 const productSchema = new mongoose.Schema({}, {strict: false})
@@ -28,6 +29,43 @@ const categoryMapping = {
   'motorcycle': 'motorcycle',
   'vehicle': 'vehicle',
   'sports-accessories': 'sports-accessories'
+};
+
+//! Redis cache helper functions
+const getCacheKey = (prefix, ...args) => {
+  return `${prefix}:${args.join(':')}`;
+};
+
+const getCachedData = async (key) => {
+  try {
+    const cachedData = await redisClient.get(key);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+    return null;
+  } catch (error) {
+    logger.error('Redis get error', { error: error.message, key });
+    return null;
+  }
+};
+
+const setCachedData = async (key, data, expiration = 300) => {
+  try {
+    await redisClient.setEx(key, expiration, JSON.stringify(data));
+  } catch (error) {
+    logger.error('Redis set error', { error: error.message, key });
+  }
+};
+
+const deleteCachedData = async (pattern) => {
+  try {
+    const keys = await redisClient.keys(pattern);
+    if (keys.length > 0) {
+      await redisClient.del(...keys);
+    }
+  } catch (error) {
+    logger.error('Redis delete error', { error: error.message, pattern });
+  }
 };
 
 //! middleware to check jwt token
@@ -133,6 +171,27 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
       search: search
     });
 
+    // Create cache key for category data
+    const cacheKey = getCacheKey('category', category, page, limit, search);
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('Category data served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        category: category,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Products data fetched successfully (cached)',
+        data: cachedData,
+        fromCache: true
+      });
+    }
+
     const apiCategoryData = categoryMapping[category.toLowerCase()] || category;
     const allMongoCategoryData = await Product.find({ category : apiCategoryData})
 
@@ -163,6 +222,22 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
     const totalProducts = filteredProducts.length;
     const totalPages = Math.ceil(totalProducts / limit);
 
+    const responseData = {
+      products: paginatedProducts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages,
+        hasNextPage: endIndex < totalProducts,
+        hasPreviousPage: page > 1,
+        limit: parseInt(limit)
+      },
+      category: category,
+      searchTerm: search || null
+    };
+
+    // Cache the response data for 5 minutes
+    await setCachedData(cacheKey, responseData, 300);
+
     logger.info('Category data fetched successfully', {
       correlationId: req.correlationId,
       userId: req.user.id || req.user.userId,
@@ -170,24 +245,15 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
       totalProducts: totalProducts,
       returnedProducts: paginatedProducts.length,
       currentPage: parseInt(page),
-      totalPages: totalPages
+      totalPages: totalPages,
+      cached: true
     });
 
     res.status(200).json({
       success: true,
-      message: 'Products data fetched succesfully',
-      data: {
-        products: paginatedProducts,
-        pagination: {
-          currentPage: parseInt(page),
-          totalPages,
-          hasNextPage: endIndex < totalProducts,
-          hasPreviousPage: page > 1,
-          limit: parseInt(limit)
-        },
-        category: category,
-        searchTerm: search || null
-      }
+      message: 'Products data fetched successfully',
+      data: responseData,
+      fromCache: false
     });
 
   } catch (error) {
@@ -225,7 +291,7 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
   }
 }]
 
-//! APi to get all products 
+//! API to get all products 
 exports.getAllProducts = [verifyToken, async (req, res) => {
   try {
     const { page = 1, limit = 20, search = '' } = req.query;
@@ -238,6 +304,27 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
       search: search
     });
 
+    // Create cache key for all products
+    const cacheKey = getCacheKey('all-products', page, limit, search);
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('All products served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'All Products fetched successfully (cached)',
+        data: cachedData,
+        searchTerm: search || null,
+        fromCache: true
+      });
+    }
+
     let allProducts = await Product.find({})
     
     const products = allProducts || []
@@ -247,30 +334,37 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
     const endIndex = startIndex + parseInt(limit)
     const paginatedProducts = products.slice(startIndex, endIndex)
 
+    const responseData = {
+      products: paginatedProducts,
+      pagination: {
+        currentPage: parseInt(page),
+        totalProducts: products.length,
+        totalPages: Math.ceil(products.length / limit),
+        hasNextPage: endIndex < products.length,
+        hasPreviousPage: page > 1,
+        limit: parseInt(limit)
+      }
+    };
+
+    // Cache the response data for 5 minutes
+    await setCachedData(cacheKey, responseData, 300);
+
     logger.info('All products fetched successfully', {
       correlationId: req.correlationId,
       userId: req.user.id || req.user.userId,
       totalProducts: products.length,
       returnedProducts: paginatedProducts.length,
       currentPage: parseInt(page),
-      totalPages: Math.ceil(products.length / limit)
+      totalPages: Math.ceil(products.length / limit),
+      cached: true
     });
 
     res.status(200).json({
       success: true,
-      message: 'All Products fetched succesfully',
-      data: {
-        products: paginatedProducts,
-        pagination: {
-          currentPage: parseInt(page),
-          totalProducts: products.length,
-          totalPages: Math.ceil(products.length / limit),
-          hasNextPage: endIndex < products.length,
-          hasPreviousPage: page > 1,
-          limit: parseInt(limit)
-        }
-      },
-      searchTerm: search || null
+      message: 'All Products fetched successfully',
+      data: responseData,
+      searchTerm: search || null,
+      fromCache: false
     })
   } catch (error) {
     logger.error('Error fetching all products', {
@@ -300,6 +394,26 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
       limit: limit
     });
 
+    // Create cache key for featured products
+    const cacheKey = getCacheKey('featured-products', limit);
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('Featured products served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Featured products fetched successfully (cached)',
+        data: cachedData,
+        fromCache: true
+      });
+    }
+
     const response = await axios.get('https://dummyjson.com/products', {
       timeout: 10000,
     });
@@ -311,21 +425,28 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
       .filter(product => product.rating >= 4.5)
       .slice(0, parseInt(limit));
 
+    const responseData = {
+      products: featuredProducts,
+      count: featuredProducts.length
+    };
+
+    // Cache the response data for 10 minutes
+    await setCachedData(cacheKey, responseData, 600);
+
     logger.info('Featured products fetched successfully', {
       correlationId: req.correlationId,
       userId: req.user.id || req.user.userId,
       totalAvailableProducts: products.length,
       featuredProductsCount: featuredProducts.length,
-      requestedLimit: parseInt(limit)
+      requestedLimit: parseInt(limit),
+      cached: true
     });
 
     res.status(200).json({
       success: true,
       message: 'Featured products fetched successfully',
-      data: {
-        products: featuredProducts,
-        count: featuredProducts.length
-      }
+      data: responseData,
+      fromCache: false
     });
 
   } catch (error) {
@@ -353,23 +474,50 @@ exports.getCategories = [verifyToken, async (req, res) => {
       userId: req.user.id || req.user.userId
     });
 
+    // Create cache key for categories
+    const cacheKey = getCacheKey('categories');
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('Categories served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Categories fetched successfully (cached)',
+        data: cachedData,
+        fromCache: true
+      });
+    }
+
     const response = await axios.get('https://dummyjson.com/products/categories', {
       timeout: 10000,
     });
 
+    const responseData = {
+      categories: response.data,
+      count: response.data.length
+    };
+
+    // Cache the response data for 30 minutes (categories don't change frequently)
+    await setCachedData(cacheKey, responseData, 1800);
+
     logger.info('Categories fetched successfully', {
       correlationId: req.correlationId,
       userId: req.user.id || req.user.userId,
-      categoriesCount: response.data.length
+      categoriesCount: response.data.length,
+      cached: true
     });
 
     res.status(200).json({
       success: true,
       message: 'Categories fetched successfully',
-      data: {
-        categories: response.data,
-        count: response.data.length
-      }
+      data: responseData,
+      fromCache: false
     });
 
   } catch (error) {
@@ -399,6 +547,26 @@ exports.getOffers = [verifyToken, async (req, res) => {
       limit: limit
     });
 
+    // Create cache key for offers
+    const cacheKey = getCacheKey('offers', limit);
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('Offers served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Offers fetched successfully (cached)',
+        data: cachedData,
+        fromCache: true
+      });
+    }
+
     const response = await axios.get('https://dummyjson.com/products', {
       timeout: 10000,
     });
@@ -411,22 +579,29 @@ exports.getOffers = [verifyToken, async (req, res) => {
       .sort((a, b) => b.discountPercentage - a.discountPercentage)
       .slice(0, parseInt(limit));
 
+    const responseData = {
+      products: discountedProducts,
+      count: discountedProducts.length
+    };
+
+    // Cache the response data for 5 minutes (offers might change frequently)
+    await setCachedData(cacheKey, responseData, 300);
+
     logger.info('Offers fetched successfully', {
       correlationId: req.correlationId,
       userId: req.user.id || req.user.userId,
       totalProducts: products.length,
       discountedProductsCount: discountedProducts.length,
       requestedLimit: parseInt(limit),
-      maxDiscountPercentage: discountedProducts.length > 0 ? discountedProducts[0].discountPercentage : 0
+      maxDiscountPercentage: discountedProducts.length > 0 ? discountedProducts[0].discountPercentage : 0,
+      cached: true
     });
 
     res.status(200).json({
       success: true,
       message: 'Offers fetched successfully',
-      data: {
-        products: discountedProducts,
-        count: discountedProducts.length
-      }
+      data: responseData,
+      fromCache: false
     });
 
   } catch (error) {
@@ -457,9 +632,33 @@ exports.getProductById = [verifyToken, async (req, res) => {
       productId: id
     });
 
+    // Create cache key for single product
+    const cacheKey = getCacheKey('product', id);
+    
+    // Try to get cached data
+    const cachedData = await getCachedData(cacheKey);
+    if (cachedData) {
+      logger.info('Product served from cache', {
+        correlationId: req.correlationId,
+        userId: req.user.id || req.user.userId,
+        productId: id,
+        cacheKey: cacheKey
+      });
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Product fetched successfully (cached)',
+        data: cachedData,
+        fromCache: true
+      });
+    }
+
     const response = await axios.get(`https://dummyjson.com/products/${id}`, {
       timeout: 10000,
     });
+
+    // Cache the response data for 15 minutes
+    await setCachedData(cacheKey, response.data, 900);
 
     logger.info('Product fetched successfully', {
       correlationId: req.correlationId,
@@ -467,13 +666,15 @@ exports.getProductById = [verifyToken, async (req, res) => {
       productId: id,
       productTitle: response.data.title,
       productCategory: response.data.category,
-      productPrice: response.data.price
+      productPrice: response.data.price,
+      cached: true
     });
 
     res.status(200).json({
       success: true,
       message: 'Product fetched successfully',
-      data: response.data
+      data: response.data,
+      fromCache: false
     });
 
   } catch (error) {
@@ -498,6 +699,48 @@ exports.getProductById = [verifyToken, async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Failed to fetch product',
+      data: null
+    });
+  }
+}]
+
+//! API to clear cache (utility function for development/admin)
+exports.clearCache = [verifyToken, async (req, res) => {
+  try {
+    const { pattern = '*' } = req.query;
+
+    logger.info('Clearing cache', {
+      correlationId: req.correlationId,
+      userId: req.user.id || req.user.userId,
+      pattern: pattern
+    });
+
+    await deleteCachedData(pattern);
+
+    logger.info('Cache cleared successfully', {
+      correlationId: req.correlationId,
+      userId: req.user.id || req.user.userId,
+      pattern: pattern
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Cache cleared successfully',
+      data: null
+    });
+
+  } catch (error) {
+    logger.error('Error clearing cache', {
+      error: error.message,
+      stack: error.stack,
+      correlationId: req.correlationId,
+      userId: req.user?.id || req.user?.userId,
+      query: req.query
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to clear cache',
       data: null
     });
   }
