@@ -76,6 +76,7 @@ export const ProductDetailed = () => {
     })
   }, [])
 
+  //! to fetch all data 
   const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
@@ -150,15 +151,13 @@ export const ProductDetailed = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleProductClick = (productId) => {
-    navigate(`/product/${productId}`);
-  };
 
+  //! add to cart
   const handleAddToCart = async (e, product) => {
     e.stopPropagation(); //! Prevent navigation when clicking add to cart
     
     if (product.stock <= 0) {
-      addNotification("Warning", "Sorry!", 'This product is out of stock');
+      addNotification("warning", "Sorry!", 'This product is out of stock');
       return;
     }
 
@@ -314,7 +313,6 @@ export const ProductDetailed = () => {
             <div 
               key={index} 
               className="product-card"
-              onClick={() => handleProductClick(product.id)}
             >
               <div className="product-image">
                 <img 

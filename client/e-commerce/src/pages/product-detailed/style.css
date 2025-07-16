@@ -105,7 +105,7 @@
   overflow: hidden;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   display: flex;
-  height: 45rem;
+  height: 36rem;
   flex-direction: column;
 }
 

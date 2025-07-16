@@ -63,7 +63,6 @@ export const Login = () => {
       const res = await registerUser(formData);
 
       console.log("response_data___", res);
-      localStorage.setItem("token", res.token);
       addNotification("success", "Success!", "Registeration Successfull !!!");
       setIsRightPanelActie(false);
     } catch (error) {

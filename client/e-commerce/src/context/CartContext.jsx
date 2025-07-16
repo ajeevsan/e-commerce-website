@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 
 const CartContext = createContext();
 
@@ -6,6 +6,7 @@ const CartContext = createContext();
 const cartReducer = (state, action) => {
   switch (action.type) {
     case 'ADD_TO_CART': {
+      console.log('add to cart triggered');
       const { items } = action.payload;
       const productToAdd = items[0]; 
       
@@ -125,6 +126,7 @@ const initialState = {
   version: 0
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useCart = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -150,57 +152,62 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
-  // Save cart to localStorage whenever cart changes
+  // Save cart to localStorage whenever cart changes - but throttled to prevent excessive saves
   useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state));
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('cart', JSON.stringify(state));
+    }, 100); // Debounce localStorage saves
+
+    return () => clearTimeout(timeoutId);
   }, [state]);
 
-  // Cart actions
-  const addToCart = (cartData) => {
+  // Memoize cart actions to prevent unnecessary re-renders
+  const addToCart = useCallback((cartData) => {
     dispatch({ type: 'ADD_TO_CART', payload: cartData });
-  };
+  }, []);
 
-  const removeFromCart = (productId) => {
+  const removeFromCart = useCallback((productId) => {
     dispatch({ type: 'REMOVE_FROM_CART', payload: productId });
-  };
+  }, []);
 
-  const updateQuantity = (productId, quantity) => {
+  const updateQuantity = useCallback((productId, quantity) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, quantity } });
-  };
+  }, []);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     dispatch({ type: 'CLEAR_CART' });
-  };
+  }, []);
 
   // Set entire cart (useful for loading from API)
-  const setCart = (cartData) => {
+  const setCart = useCallback((cartData) => {
     dispatch({ type: 'SET_CART', payload: cartData });
-  };
+  }, []);
 
-  // Cart calculations (already calculated in state)
-  const getTotalItems = () => {
+  // Memoize getter functions to prevent unnecessary re-renders
+  const getTotalItems = useCallback(() => {
     return state.totalItems;
-  };
+  }, [state.totalItems]);
 
-  const getTotalPrice = () => {
+  const getTotalPrice = useCallback(() => {
     return state.totalPrice;
-  };
+  }, [state.totalPrice]);
 
-  const getCartItem = (productId) => {
+  const getCartItem = useCallback((productId) => {
     return state.items.find(item => item.productId === productId);
-  };
+  }, [state.items]);
 
   // Check if product is in cart
-  const isInCart = (productId) => {
+  const isInCart = useCallback((productId) => {
     return state.items.some(item => item.productId === productId);
-  };
+  }, [state.items]);
 
   // Get cart item quantity
-  const getItemQuantity = (productId) => {
+  const getItemQuantity = useCallback((productId) => {
     const item = state.items.find(item => item.productId === productId);
     return item ? item.quantity : 0;
-  };
+  }, [state.items]);
 
+  // Memoize the context value to prevent unnecessary re-renders
   const value = {
     // State
     cart: state,

@@ -66,6 +66,7 @@ export const ProductCategory = () => {
   const handleSubItemClick = (subItem) => {
     // Convert subItem to URL-friendly format
     const categoryParam = subItem.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
+    console.log('categoryParam___',categoryParam)
     navigate(`/products/category/${categoryParam}`);
   };
 

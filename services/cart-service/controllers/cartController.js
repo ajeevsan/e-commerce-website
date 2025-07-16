@@ -231,7 +231,7 @@ exports.addToCart = async (req, res) => {
     }
 };
 
-// Update item quantity in cart - FIXED VERSION
+//! update item quantity in cart - FIXED VERSION
 exports.updateItemQuantity = async (req, res) => {
     try {
         const { userId, productId } = req.params;

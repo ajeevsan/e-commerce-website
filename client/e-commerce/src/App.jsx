@@ -9,6 +9,8 @@ import "./App.css";
 import ProfileWrapper from "./pages/profile/ProfileWrapper";
 import { ProductDetailed } from "./pages/product-detailed/ProductDetailed";
 import { ProductDetail } from "./pages/product-detail/ProductDetail";
+import { Payment } from "./pages/payment/Payment";
+
 const App = () => {
   const { isAuthenticated } = useAuth();
 
@@ -43,10 +45,18 @@ const App = () => {
         )
       },
       {
-        path: '/cart',
+        path: '/cart/:id',
         element: (
           <ProtectedRoute isAuthenticated={isAuthenticated}>
             <ProductDetail/>
+          </ProtectedRoute>
+        )
+      },
+      {
+        path: '/payment',
+        element: (
+          <ProtectedRoute isAuthenticated={isAuthenticated}>
+            <Payment/>
           </ProtectedRoute>
         )
       }

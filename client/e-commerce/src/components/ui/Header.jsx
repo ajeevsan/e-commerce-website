@@ -77,6 +77,11 @@ export const Header = () => {
     }, 150);
   };
 
+  const handleCartClick = () => {
+    let id = Cookies.get('userId')
+    navigate(`/cart/${id}`)
+  }
+
   const totalItems = getTotalItems()
 
   return (
@@ -113,7 +118,7 @@ export const Header = () => {
                   })}
                 </ul>
               </li>
-              <li className="nav-icons cart-icon" onClick={() => navigate('/cart')}>
+              <li className="nav-icons cart-icon" onClick={() => handleCartClick()}>
                 <div className="cart-container">
                 <FaCartShopping />
                   {totalItems > 0 && (
