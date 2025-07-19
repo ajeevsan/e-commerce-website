@@ -14,6 +14,26 @@ const calculateCartTotals = (items) => {
     };
 };
 
+//! Kafka event helper functions
+const sendKafkaEvent = async (eventType, eventData, correlationId, userId) => {
+  try {
+    await kafkaClient.sendProductEvent(eventType, {
+      ...eventData,
+      correlationId,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Failed to send Kafka event', {
+      error: error.message,
+      eventType,
+      correlationId,
+      userId
+    });
+  }
+};
+
+
 // Helper function to get cart from cache or database
 const getCartFromCacheOrDB = async (userId) => {
     try {

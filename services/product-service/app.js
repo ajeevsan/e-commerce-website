@@ -1,4 +1,5 @@
-require('dotenv').config()
+try {
+    require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
@@ -104,3 +105,6 @@ const gracefulShutdown = async () => {
 
 process.on('SIGTERM', gracefulShutdown)
 process.on('SIGINT', gracefulShutdown)
+} catch (error) {
+    console.error('product-service-error___', error)
+}

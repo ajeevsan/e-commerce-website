@@ -2,12 +2,13 @@ const axios = require('axios')
 const jwt = require('jsonwebtoken')
 const mongoose = require('mongoose')
 const logger = require('../config/logger')
+const kafkaClient = require('../kafka/kafkaClient') 
 const {redisClient} = require('../config/cache')
 
 //! Creating a basic schema 
 const productSchema = new mongoose.Schema({}, {strict: false})
 
-//!create the model
+//! Create the model
 const Product = mongoose.model('Product', productSchema)
 
 //! Category mapping for DummyJSON API
@@ -68,7 +69,26 @@ const deleteCachedData = async (pattern) => {
   }
 };
 
-//! middleware to check jwt token
+//! Kafka event helper functions
+const sendKafkaEvent = async (eventType, eventData, correlationId, userId) => {
+  try {
+    await kafkaClient.sendProductEvent(eventType, {
+      ...eventData,
+      correlationId,
+      userId,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    logger.error('Failed to send Kafka event', {
+      error: error.message,
+      eventType,
+      correlationId,
+      userId
+    });
+  }
+};
+
+//! Middleware to check jwt token
 const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization
@@ -112,9 +132,9 @@ const verifyToken = (req, res, next) => {
       })
     }
 
-    //! verify token 
+    //! Verify token 
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
-	  console.log('decoded_value___', decoded)
+    console.log('decoded_value___', decoded)
     req.user = decoded;
     
     logger.info('Token verified successfully', {
@@ -171,6 +191,15 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
       search: search
     });
 
+    // Send Kafka event for category request
+    await sendKafkaEvent('CATEGORY_REQUEST', {
+      category,
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+      action: 'fetch_category_data'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for category data
     const cacheKey = getCacheKey('category', category, page, limit, search);
     
@@ -183,6 +212,13 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
         category: category,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('CATEGORY_CACHE_HIT', {
+        category,
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -202,6 +238,13 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
         apiCategoryData: apiCategoryData,
         userId: req.user.id || req.user.userId
       });
+
+      // Send Kafka event for category not found
+      await sendKafkaEvent('CATEGORY_NOT_FOUND', {
+        category,
+        apiCategoryData,
+        action: 'category_not_found'
+      }, req.correlationId, req.user.id || req.user.userId);
 
       return res.status(404).json({
         success: false,
@@ -249,6 +292,16 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful category fetch
+    await sendKafkaEvent('CATEGORY_FETCH_SUCCESS', {
+      category,
+      totalProducts,
+      returnedProducts: paginatedProducts.length,
+      currentPage: parseInt(page),
+      totalPages,
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'Products data fetched successfully',
@@ -265,6 +318,13 @@ exports.getCategoryData = [verifyToken, async (req, res) => {
       category: req.params.category,
       query: req.query
     });
+
+    // Send Kafka event for category fetch error
+    await sendKafkaEvent('CATEGORY_FETCH_ERROR', {
+      category: req.params.category,
+      error: error.message,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     if (error.response?.status === 404) {
       return res.status(404).json({
@@ -304,6 +364,14 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
       search: search
     });
 
+    // Send Kafka event for all products request
+    await sendKafkaEvent('ALL_PRODUCTS_REQUEST', {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      search,
+      action: 'fetch_all_products'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for all products
     const cacheKey = getCacheKey('all-products', page, limit, search);
     
@@ -315,6 +383,12 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
         userId: req.user.id || req.user.userId,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('ALL_PRODUCTS_CACHE_HIT', {
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -359,6 +433,15 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful all products fetch
+    await sendKafkaEvent('ALL_PRODUCTS_FETCH_SUCCESS', {
+      totalProducts: products.length,
+      returnedProducts: paginatedProducts.length,
+      currentPage: parseInt(page),
+      totalPages: Math.ceil(products.length / limit),
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'All Products fetched successfully',
@@ -374,6 +457,12 @@ exports.getAllProducts = [verifyToken, async (req, res) => {
       userId: req.user?.id || req.user?.userId,
       query: req.query
     });
+
+    // Send Kafka event for all products fetch error
+    await sendKafkaEvent('ALL_PRODUCTS_FETCH_ERROR', {
+      error: error.message,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     res.status(500).json({
       success: false,
@@ -394,6 +483,12 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
       limit: limit
     });
 
+    // Send Kafka event for featured products request
+    await sendKafkaEvent('FEATURED_PRODUCTS_REQUEST', {
+      limit: parseInt(limit),
+      action: 'fetch_featured_products'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for featured products
     const cacheKey = getCacheKey('featured-products', limit);
     
@@ -405,6 +500,12 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
         userId: req.user.id || req.user.userId,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('FEATURED_PRODUCTS_CACHE_HIT', {
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -442,6 +543,14 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful featured products fetch
+    await sendKafkaEvent('FEATURED_PRODUCTS_FETCH_SUCCESS', {
+      totalAvailableProducts: products.length,
+      featuredProductsCount: featuredProducts.length,
+      requestedLimit: parseInt(limit),
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'Featured products fetched successfully',
@@ -457,6 +566,12 @@ exports.getFeaturedProducts = [verifyToken, async (req, res) => {
       userId: req.user?.id || req.user?.userId,
       query: req.query
     });
+
+    // Send Kafka event for featured products fetch error
+    await sendKafkaEvent('FEATURED_PRODUCTS_FETCH_ERROR', {
+      error: error.message,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     res.status(500).json({
       success: false,
@@ -474,6 +589,11 @@ exports.getCategories = [verifyToken, async (req, res) => {
       userId: req.user.id || req.user.userId
     });
 
+    // Send Kafka event for categories request
+    await sendKafkaEvent('CATEGORIES_REQUEST', {
+      action: 'fetch_categories'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for categories
     const cacheKey = getCacheKey('categories');
     
@@ -485,6 +605,12 @@ exports.getCategories = [verifyToken, async (req, res) => {
         userId: req.user.id || req.user.userId,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('CATEGORIES_CACHE_HIT', {
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -513,6 +639,12 @@ exports.getCategories = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful categories fetch
+    await sendKafkaEvent('CATEGORIES_FETCH_SUCCESS', {
+      categoriesCount: response.data.length,
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'Categories fetched successfully',
@@ -527,6 +659,12 @@ exports.getCategories = [verifyToken, async (req, res) => {
       correlationId: req.correlationId,
       userId: req.user?.id || req.user?.userId
     });
+
+    // Send Kafka event for categories fetch error
+    await sendKafkaEvent('CATEGORIES_FETCH_ERROR', {
+      error: error.message,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     res.status(500).json({
       success: false,
@@ -547,6 +685,12 @@ exports.getOffers = [verifyToken, async (req, res) => {
       limit: limit
     });
 
+    // Send Kafka event for offers request
+    await sendKafkaEvent('OFFERS_REQUEST', {
+      limit: parseInt(limit),
+      action: 'fetch_offers'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for offers
     const cacheKey = getCacheKey('offers', limit);
     
@@ -558,6 +702,12 @@ exports.getOffers = [verifyToken, async (req, res) => {
         userId: req.user.id || req.user.userId,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('OFFERS_CACHE_HIT', {
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -597,6 +747,15 @@ exports.getOffers = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful offers fetch
+    await sendKafkaEvent('OFFERS_FETCH_SUCCESS', {
+      totalProducts: products.length,
+      discountedProductsCount: discountedProducts.length,
+      requestedLimit: parseInt(limit),
+      maxDiscountPercentage: discountedProducts.length > 0 ? discountedProducts[0].discountPercentage : 0,
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'Offers fetched successfully',
@@ -612,6 +771,12 @@ exports.getOffers = [verifyToken, async (req, res) => {
       userId: req.user?.id || req.user?.userId,
       query: req.query
     });
+
+    // Send Kafka event for offers fetch error
+    await sendKafkaEvent('OFFERS_FETCH_ERROR', {
+      error: error.message,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     res.status(500).json({
       success: false,
@@ -632,6 +797,12 @@ exports.getProductById = [verifyToken, async (req, res) => {
       productId: id
     });
 
+    // Send Kafka event for product by ID request
+    await sendKafkaEvent('PRODUCT_BY_ID_REQUEST', {
+      productId: id,
+      action: 'fetch_product_by_id'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     // Create cache key for single product
     const cacheKey = getCacheKey('product', id);
     
@@ -644,6 +815,13 @@ exports.getProductById = [verifyToken, async (req, res) => {
         productId: id,
         cacheKey: cacheKey
       });
+
+      // Send Kafka event for cache hit
+      await sendKafkaEvent('PRODUCT_BY_ID_CACHE_HIT', {
+        productId: id,
+        cacheKey,
+        action: 'cache_hit'
+      }, req.correlationId, req.user.id || req.user.userId);
       
       return res.status(200).json({
         success: true,
@@ -670,6 +848,15 @@ exports.getProductById = [verifyToken, async (req, res) => {
       cached: true
     });
 
+    // Send Kafka event for successful product fetch
+    await sendKafkaEvent('PRODUCT_BY_ID_FETCH_SUCCESS', {
+      productId: id,
+      productTitle: response.data.title,
+      productCategory: response.data.category,
+      productPrice: response.data.price,
+      action: 'fetch_success'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     res.status(200).json({
       success: true,
       message: 'Product fetched successfully',
@@ -688,7 +875,21 @@ exports.getProductById = [verifyToken, async (req, res) => {
       responseData: error.response?.data
     });
 
+    // Send Kafka event for product by ID fetch error
+    await sendKafkaEvent('PRODUCT_BY_ID_FETCH_ERROR', {
+      productId: req.params.id,
+      error: error.message,
+      responseStatus: error.response?.status,
+      action: 'fetch_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
+
     if (error.response?.status === 404) {
+      // Send specific Kafka event for product not found
+      await sendKafkaEvent('PRODUCT_NOT_FOUND', {
+        productId: req.params.id,
+        action: 'product_not_found'
+      }, req.correlationId, req.user?.id || req.user?.userId);
+
       return res.status(404).json({
         success: false,
         message: 'Product not found',
@@ -715,6 +916,12 @@ exports.clearCache = [verifyToken, async (req, res) => {
       pattern: pattern
     });
 
+    // Send Kafka event for cache clear request
+    await sendKafkaEvent('CACHE_CLEAR_REQUEST', {
+      pattern,
+      action: 'clear_cache'
+    }, req.correlationId, req.user.id || req.user.userId);
+
     await deleteCachedData(pattern);
 
     logger.info('Cache cleared successfully', {
@@ -722,6 +929,12 @@ exports.clearCache = [verifyToken, async (req, res) => {
       userId: req.user.id || req.user.userId,
       pattern: pattern
     });
+
+    // Send Kafka event for successful cache clear
+    await sendKafkaEvent('CACHE_CLEAR_SUCCESS', {
+      pattern,
+      action: 'clear_cache_success'
+    }, req.correlationId, req.user.id || req.user.userId);
 
     res.status(200).json({
       success: true,
@@ -737,6 +950,13 @@ exports.clearCache = [verifyToken, async (req, res) => {
       userId: req.user?.id || req.user?.userId,
       query: req.query
     });
+
+    // Send Kafka event for cache clear error
+    await sendKafkaEvent('CACHE_CLEAR_ERROR', {
+      pattern: req.query.pattern,
+      error: error.message,
+      action: 'clear_cache_error'
+    }, req.correlationId, req.user?.id || req.user?.userId);
 
     res.status(500).json({
       success: false,

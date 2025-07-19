@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.0
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - ecommerce-network
+
+  # Kafka
+  kafka:
+    image: confluentinc/cp-kafka:7.4.0
+    hostname: kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9101:9101"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+    networks:
+      - ecommerce-network
+
+  # Redis
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - ecommerce-network
+
+  # MongoDB
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ecommerce-network
+
+  # API Gateway
+  api-gateway:
+    build: 
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "4000:4000"
+    depends_on:
+      - kafka
+      - redis
+    environment:
+      - NODE_ENV=production
+      - KAFKA_BROKERS=kafka:29092
+      - REDIS_URL=redis://redis:6379
+    networks:
+      - ecommerce-network
+
+  # Auth Service
+  auth-service:
+    build: 
+      context: ./services/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/auth?authSource=admin
+      - KAFKA_BROKERS=kafka:29092
+    networks:
+      - ecommerce-network
+
+  # Product Service
+  product-service:
+    build: 
+      context: ./services/product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/products?authSource=admin
+      - KAFKA_BROKERS=kafka:29092
+    networks:
+      - ecommerce-network
+
+  # Cart Service
+  cart-service:
+    build: 
+      context: ./services/cart-service
+      dockerfile: Dockerfile
+    container_name: cart-service
+    ports:
+      - "3002:3002"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/cart?authSource=admin
+      - KAFKA_BROKERS=kafka:29092
+    networks:
+      - ecommerce-network
+
+  # Profile Service
+  profile-service:
+    build: 
+      context: ./services/profile-service
+      dockerfile: Dockerfile
+    container_name: profile-service
+    ports:
+      - "3003:3003"
+    depends_on:
+      - mongodb
+      - kafka
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - HOST=0.0.0.0
+      - MONGODB_URI=mongodb://admin:password@mongodb:27017/profile?authSource=admin
+      - KAFKA_BROKERS=kafka:29092
+    networks:
+      - ecommerce-network
+
+  # React Client
+  client:
+    build: 
+      context: ./client/e-commerce
+      dockerfile: Dockerfile
+    container_name: client
+    ports:
+      - "5000:80"
+    depends_on:
+      - api-gateway
+    networks:
+      - ecommerce-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  ecommerce-network:
+    driver: bridge

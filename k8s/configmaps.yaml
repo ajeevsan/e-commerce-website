@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: ecommerce
+data:
+  NODE_ENV: "production"
+  KAFKA_BROKERS: "kafka-service:9092"
+  REDIS_URL: "redis://redis-service:6379"
+  MONGODB_URI: "mongodb://mongodb-service:27017"
