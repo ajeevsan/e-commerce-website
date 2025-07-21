@@ -1,4 +1,4 @@
-const { consumer } = require('./kafkaClient');
+const { consumer } = require('../../shared/kafkaClient');
 
 class KafkaConsumer {
   constructor() {

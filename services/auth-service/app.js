@@ -8,7 +8,8 @@ const {
     handleUserRegistration,
     handleUserLogin,
     handleUserLogout,
-    handlePasswordReset
+    handlePasswordReset,
+    handleSendOtp
 } = require('./services/authEventHandlers');
 
 const app = express();
@@ -43,7 +44,7 @@ const initializeKafka = async () => {
         console.log('Initializing Kafka consumer...');
         
         // Add event handlers
-        kafkaConsumer.addHandler('user-events', async (eventData, message) => {
+        kafkaConsumer.addHandler('auth-events', async (eventData, message) => {
             try {
                 console.log(`Processing event: ${eventData.event}`);
                 
@@ -60,6 +61,9 @@ const initializeKafka = async () => {
                     case 'PASSWORD_RESET':
                         await handlePasswordReset(eventData);
                         break;
+                    case 'SEND_OTP':
+                        await handleSendOtp(eventData)
+                        break;
                     default:
                         console.log('Unknown event type:', eventData.event);
                 }
@@ -69,7 +73,8 @@ const initializeKafka = async () => {
         });
 
         // Subscribe to topics
-        await kafkaConsumer.subscribe(['user-events', 'password-reset-events']);
+        // await kafkaConsumer.subscribe(['user-events', 'password-reset-events']);
+        await kafkaConsumer.subscribe(['user-events']);
         
         console.log('Kafka consumer initialized successfully');
         

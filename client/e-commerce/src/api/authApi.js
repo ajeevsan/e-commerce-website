@@ -12,5 +12,15 @@ export const registerUser = async (data) => {
     return response.data;
 }
 
+export const sendOtp = async (data) => {
+    console.log('send-otp_data___', data)
+    const response = await axios.post(`${BASE_URL}/auth/send-otp`, data);
+    return response.data;
+}
 
+export const verifyOtp = async (data) => {
+    console.log('send-otp_data___', data)
+    const response = await axios.post(`${BASE_URL}/auth/verify-otp`, data);
+    return response.data;
+}
 

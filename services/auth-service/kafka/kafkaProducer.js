@@ -1,4 +1,4 @@
-const { producer } = require('./kafkaClient');
+const { producer } = require('../../shared/kafkaClient');
 
 class KafkaProducer {
   constructor() {
@@ -53,7 +53,7 @@ class KafkaProducer {
 
 const kafkaProducer = new KafkaProducer();
 
-// Graceful shutdown
+//! Graceful shutdown
 process.on('SIGINT', async () => {
   await kafkaProducer.disconnect();
   process.exit(0);

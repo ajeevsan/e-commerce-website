@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { loginUser, registerUser } from "../../api/authApi";
+import { loginUser, registerUser, sendOtp, verifyOtp } from "../../api/authApi";
 import { useNavigate } from "react-router-dom";
 import { Notification } from "../../components/Notification";
 import { useAuth } from "../../context/AuthContext";
@@ -7,6 +7,19 @@ import "./style.css";
 
 export const Login = () => {
   const [isRightPanelActive, setIsRightPanelActie] = useState(false);
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
+
+  // Form state for registration
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    otp: "",
+  });
+
   const navigate = useNavigate();
   const { login } = useAuth();
 
@@ -16,6 +29,31 @@ export const Login = () => {
 
   const handleSignInClick = () => {
     setIsRightPanelActie(false);
+    // Reset OTP states when switching back to sign in
+    setIsOtpSent(false);
+    setIsOtpVerified(false);
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      otp: "",
+    });
+  };
+
+  // Reset OTP process
+  const handleResetOtp = () => {
+    setIsOtpSent(false);
+    setIsOtpVerified(false);
+    setOtpTimer(0);
+    setFormData(prev => ({
+      ...prev,
+      otp: "",
+    }));
+    addNotification(
+      "info",
+      "Process Reset",
+      "You can now modify your details and send OTP again."
+    );
   };
 
   const [notifications, setNotifications] = useState([]);
@@ -37,12 +75,86 @@ export const Login = () => {
     setNotifications((prev) => prev.filter((notif) => notif.id !== id));
   };
 
+  // Start timer for OTP resend
+  const startOtpTimer = () => {
+    setOtpTimer(60);
+    const interval = setInterval(() => {
+      setOtpTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // Handle Send OTP
+  const handleSendOtp = async (email) => {
+    try {
+      setIsOtpLoading(true);
+      await sendOtp({ email });
+      setIsOtpSent(true);
+      startOtpTimer();
+      addNotification(
+        "success",
+        "OTP Sent!",
+        "Please check your email for the OTP."
+      );
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      addNotification(
+        "error",
+        "Error!",
+        "Failed to send OTP. Please try again."
+      );
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  // Handle Verify OTP
+  const handleVerifyOtp = async (email, otp, name, password) => {
+    try {
+      setIsOtpLoading(true);
+      const response = await verifyOtp({ email, otp, name, password });
+      if (response.success) {
+        setIsOtpVerified(true);
+        addNotification(
+          "success",
+          "OTP Verified!",
+          "Email verification successful."
+        );
+      } else {
+        addNotification("error", "Invalid OTP!", `${response.message}`);
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      addNotification(
+        "error",
+        "Error!",
+        "Failed to verify OTP. Please try again."
+      );
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
   //! API for the login form
   const handleLoginForm = async (e) => {
     try {
       e.preventDefault();
       const formTData = new FormData(e.target);
-      const formData = Object.fromEntries(formTData.entries()); 
+      const formData = Object.fromEntries(formTData.entries());
 
       const data = await loginUser(formData);
       login(data.token, data.name, data.userId);
@@ -50,30 +162,71 @@ export const Login = () => {
       navigate("/");
     } catch (error) {
       console.error("Error while", error);
+      addNotification("error", "Error!", `${error.response.data.msg}`);
     }
   };
 
-  //! API for the signin form
+  //! API for the signin form with OTP verification
   const handleSignForm = async (e) => {
     try {
       e.preventDefault();
-      const data = new FormData(e.target);
-      const formData = Object.fromEntries(data.entries());
 
-      const res = await registerUser(formData);
+      // If OTP not sent, send OTP first
+      if (!isOtpSent) {
+        await handleSendOtp(formData.email);
+        return;
+      }
 
-      console.log("response_data___", res);
-      addNotification("success", "Success!", "Registeration Successfull !!!");
-      setIsRightPanelActie(false);
+      // If OTP sent but not verified, verify OTP
+      if (isOtpSent && !isOtpVerified) {
+        await handleVerifyOtp(
+          formData.email,
+          formData.otp,
+          formData.name,
+          formData.password
+        );
+        return;
+      }
+
+      // If OTP verified, proceed with registration
+      if (isOtpVerified) {
+        const res = await registerUser(formData);
+        console.log("response_data___", res);
+        addNotification("success", "Success!", "Registration Successful !!!");
+
+        // Reset all states
+        setIsRightPanelActie(false);
+        setIsOtpSent(false);
+        setIsOtpVerified(false);
+        setFormData({
+          name: "",
+          email: "",
+          password: "",
+          otp: "",
+        });
+      }
     } catch (error) {
-      if (error.response.data === "User exists") {
+      if (error.response?.data === "User exists") {
         addNotification(
           "error",
           "Error!",
           "User Already Exists!!! Please Login."
         );
+      } else {
+        addNotification(
+          "error",
+          "Error!",
+          "Something went wrong. Please try again."
+        );
       }
     }
+  };
+
+  const getSignUpButtonText = () => {
+    if (isOtpLoading) return "Processing...";
+    if (!isOtpSent) return "Send OTP";
+    if (isOtpSent && !isOtpVerified) return "Verify OTP";
+    return "Sign Up";
   };
 
   return (
@@ -91,18 +244,83 @@ export const Login = () => {
               <input
                 type="text"
                 name="name"
-                id=""
                 placeholder="Name"
                 required
+                disabled={isOtpSent}
+                value={formData.name}
+                onChange={handleInputChange}
               />
-              <input type="email" name="email" placeholder="Email" required />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                required
+                disabled={isOtpSent}
+                value={formData.email}
+                onChange={handleInputChange}
+              />
               <input
                 type="password"
                 name="password"
                 placeholder="Password"
                 required
+                disabled={!isOtpVerified && isOtpSent}
+                value={formData.password}
+                onChange={handleInputChange}
               />
-              <button className="submitBtn" type="submit">Sign Up</button>
+
+              {isOtpSent && (
+                <div className="otp-section">
+                  <div className="otp-input-container">
+                    <input
+                      type="text"
+                      name="otp"
+                      placeholder="Enter OTP"
+                      required
+                      maxLength="6"
+                      disabled={isOtpVerified}
+                      value={formData.otp}
+                      onChange={handleInputChange}
+                    />
+                    <button
+                      type="button"
+                      className="reset-btn"
+                      onClick={handleResetOtp}
+                      disabled={isOtpLoading}
+                      title="Reset OTP process"
+                    >
+                      ↻
+                    </button>
+                  </div>
+                  {!isOtpVerified && otpTimer > 0 && (
+                    <p className="otp-timer">Resend OTP in {otpTimer}s</p>
+                  )}
+                  {!isOtpVerified && otpTimer === 0 && (
+                    <button
+                      type="button"
+                      className="resend-otp-btn"
+                      onClick={() => handleSendOtp(formData.email)}
+                      disabled={isOtpLoading}
+                    >
+                      Resend OTP
+                    </button>
+                  )}
+                  {isOtpVerified && (
+                    <p className="otp-verified">✅ Email Verified</p>
+                  )}
+                </div>
+              )}
+
+              <button
+                  className="submitBtn"
+                  type="submit"
+                  disabled={
+                    isOtpLoading ||
+                    (isOtpSent && !isOtpVerified && !formData.otp)
+                  }
+                >
+                  {getSignUpButtonText()}
+                </button>
             </form>
           </div>
 
@@ -117,7 +335,9 @@ export const Login = () => {
                 required
               />
               <a href="/forgot">Forgot you password</a>
-              <button className='submitBtn' type="submit">Sign In</button>
+              <button className="submitBtn" type="submit">
+                Sign In
+              </button>
             </form>
           </div>
 

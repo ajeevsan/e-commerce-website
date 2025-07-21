@@ -1,5 +1,6 @@
 const Cart = require('../models/Cart');
 const { redisClient } = require('../config/cache');
+const { sendEvent } = require('../kafka/kafkaProducer')
 
 // Helper function to generate cache key
 const getCacheKey = (userId) => `cart:${userId}`;
@@ -98,6 +99,12 @@ exports.getCart = async (req, res) => {
             });
         }
 
+        sendEvent('cart-events', {
+            event: 'CART_ALLDATA', 
+            userId: userId,
+            timestamp: new Date().toISOString()
+        }).catch( err => console.error('Failed to send cart event:', err))
+
         res.status(200).json({
             success: true,
             data: cart,
@@ -150,6 +157,12 @@ exports.createCart = async (req, res) => {
 
         await newCart.save();
         await updateCartCache(userId, newCart);
+
+        sendEvent('cart-event', {
+            event: 'CREATE_CART',
+            userId: userId,
+            productId: productId
+        })
 
         res.status(201).json({
             success: true,
@@ -234,6 +247,13 @@ exports.addToCart = async (req, res) => {
 
         await cart.save();
         await updateCartCache(userId, cart);
+
+        sendEvent('cart-event', {
+            event: 'ADD_TO_CART',
+            userId: userId,
+            productId: productId,
+            timestamp: new Date().toISOString()
+        }).catch(err => console.error('Error in add to cart event:', err))
 
         res.status(200).json({
             success: true,

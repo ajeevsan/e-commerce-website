@@ -1,9 +1,12 @@
+// /service/authService/app.js
+
 require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const connectDB = require('./config/db')
 const { connectRedis } = require('./config/cache')
-
+const { handleGetCart, handleCreateCart } = require("./services/cartEventListner")
+const kafkaConsumer = require('./kafka/kafkaConsumer');
 const app = express()
 
 app.use(cors())
@@ -37,6 +40,43 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3003
 const HOST = process.env.HOST || 'localhost'
 
+// Initialize Kafka Consumer
+const initializeKafka = async () => {
+    try {
+        console.log('Initializing Kafka consumer...');
+        
+        // Add event handlers
+        kafkaConsumer.addHandler('cart-events', async (eventData, message) => {
+            try {
+                console.log(`Processing event: ${eventData.event}`);
+                
+                switch (eventData.event) {
+                    case 'CART_ALLDATA':
+                        await handleGetCart(eventData);
+                        break;
+                    case 'USER_LOGIN':
+                        await handleUserLogin(eventData);
+                        break;
+                    default:
+                        console.log('Unknown event type:', eventData.event);
+                }
+            } catch (error) {
+                console.error(`Error handling event ${eventData.event}:`, error);
+            }
+        });
+
+        // Subscribe to topics
+        await kafkaConsumer.subscribe(['cart-events']);
+        
+        console.log('Kafka consumer initialized successfully');
+        
+    } catch (error) {
+        console.error('Failed to initialize Kafka consumer:', error);
+        // Don't crash the server if Kafka is not available
+        console.log('Server will continue without Kafka consumer');
+    }
+};
+
 // Initialize all connections
 const initializeApp = async () => {
     try {
@@ -53,15 +93,18 @@ const initializeApp = async () => {
             console.log(`Cart Service is running on ${HOST}:${PORT}`)
             console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
         })
+
+        // Initialize Kafka after server starts (non-blocking)
+        // Give the server a moment to fully start before connecting to Kafka
+        setTimeout(() => {
+            initializeKafka();
+        }, 2000);
         
     } catch (error) {
         console.error('Failed to initialize application:', error)
         process.exit(1)
     }
 }
-
-//! Initialize the application
-initializeApp()
 
 //! graceful shutdown
 const gracefulShutdown = async () => {
@@ -87,3 +130,17 @@ const gracefulShutdown = async () => {
 
 process.on('SIGTERM', gracefulShutdown)
 process.on('SIGINT', gracefulShutdown)
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
+
+// Initialize the application
+initializeApp();
