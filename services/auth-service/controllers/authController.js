@@ -20,7 +20,7 @@ exports.register = async (req, res) => {
         const user = await User.create({ name, email, password: hashedPassword });
 
         // Generate Token
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1m' });
 
         //! Send user creation event to Kafka (non-blocking)
         sendEvent('auth-service', {

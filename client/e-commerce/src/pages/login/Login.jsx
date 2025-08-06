@@ -45,7 +45,7 @@ export const Login = () => {
     setIsOtpSent(false);
     setIsOtpVerified(false);
     setOtpTimer(0);
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       otp: "",
     }));
@@ -312,15 +312,14 @@ export const Login = () => {
               )}
 
               <button
-                  className="submitBtn"
-                  type="submit"
-                  disabled={
-                    isOtpLoading ||
-                    (isOtpSent && !isOtpVerified && !formData.otp)
-                  }
-                >
-                  {getSignUpButtonText()}
-                </button>
+                className="submitBtn"
+                type="submit"
+                disabled={
+                  isOtpLoading || (isOtpSent && !isOtpVerified && !formData.otp)
+                }
+              >
+                {getSignUpButtonText()}
+              </button>
             </form>
           </div>
 

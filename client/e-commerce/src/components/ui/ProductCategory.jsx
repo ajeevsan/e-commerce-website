@@ -48,7 +48,7 @@ const categories = [
   },
 ];
 
-export const ProductCategory = () => {
+const ProductCategory = () => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [timeoutId, setTimeoutId] = useState(null);
   const navigate = useNavigate()
@@ -108,3 +108,6 @@ export const ProductCategory = () => {
     </div>
   );
 };
+
+
+export default ProductCategory
